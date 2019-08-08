@@ -1,109 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
+    <meta charset='UTF-8'>
     <title>canvas裁剪图片,纯前端</title>
-    <script src="../../js/jquery-1.7.2.min.js"></script>
+    <style>
+        body{
+            padding: 10px;
+            box-sizing: border-box;
+            min-height: 500px;
+        }
+        .choose-box{
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            cursor: pointer;
+            background-color: rgba(0,255,255,0.5);
+        }
+        .outer{
+            width: 300px;
+            display: inline-block;
+            background-color: rgba(0,0,0,.5);
+            height: 600px;
+            position: relative;
+            margin-left: 400px;
+        }
+        .preview-box{
+            display: inline-block;
+        }
+        .img{
+            min-width: 300px;
+            max-width: 300px;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
 <div>
-    <input type="file" id="imgFile">
+    <input type='file' id='imgFile'>
 </div>
-<div style="width: 300px;height: 300px;position: absolute;left: 300px;top: 0;display: inline-block">
-    <img id="demoImg" style="height: 300px;width: 300px" alt="">
-    <div style="width: 150px;height: 150px;border: 1px solid #4fb8e3;position: absolute;left: 0;top: 0;z-index: 1000" id="chooseBox"></div>
-</div>
-<div style="position: absolute;left: 700px;top: 0">
-    <canvas id="myCan" width="150" height="150"></canvas>
-    <button id="cut">裁剪文件</button>
-    <button id="btn">后台返回获取裁剪后的文件</button>
-    <img id="returnImg" alt="">
-</div>
-
 </body>
+<script src="src/cropper.js"></script>
 <script>
     window.onload=function () {
-        var can=document.getElementById("myCan");
-        var btn=document.getElementById("btn");
-        var returnImg=document.getElementById("returnImg");
-        var ctx=can.getContext("2d");
-
-        $('#imgFile').change(function () {
-           var file=$('#imgFile')[0].files[0];
-            var reader=new FileReader();
-            reader.onload= function (e) {
-                $('#demoImg').attr('src', e.target.result);
-            };
-            reader.readAsDataURL(file);
-        });
-        $('#chooseBox').mousedown(function (e) {
-            var originX= e.offsetX;
-            var originY= e.offsetY;
-            window.onmousemove=function (e) {
-                $('#chooseBox').css({
-                    position:'absolute',
-                    left:e.clientX-originX-300+'px',
-                    top: e.clientY-originY+'px'
-                });
-                if($('#chooseBox').position().left<=0){
-                    $('#chooseBox').css({
-                        left:0
-                    });
-                }
-                if($('#chooseBox').position().left>=150){
-                    $('#chooseBox').css({
-                        left:'149px'
-                    });
-                }
-                if($('#chooseBox').position().top<=0){
-                    $('#chooseBox').css({
-                        top:0
-                    });
-                }
-                if($('#chooseBox').position().top>=150){
-                    $('#chooseBox').css({
-                        top:'149px'
-                    });
-                }
-                $('#chooseBox').mouseout(function () {
-                    window.onmousemove=null;
-                    return
-                })
-            };
-            window.onmouseup= function () {
-                window.onmousemove=null;
-                return
-            }
-        });
-        $('#cut').click(function () {
-            var newX=$('#chooseBox').position().left*3.45;
-            var newY=$('#chooseBox').position().top*2.6;
-            var img=document.getElementById("demoImg");
-            console.log(newX,newY);
-            ctx.drawImage(img,newX,newY,150*3.45,150*2.6,0,0,150,150);
-        });
-        btn.onclick=function () {
-            var data=can.toDataURL();
-            data=data.split(',')[1];
-            data=window.atob(data);
-            var ia = new Uint8Array(data.length);
-            for (var i = 0; i < data.length; i++) {
-                ia[i] = data.charCodeAt(i);
-            }
-            var blob=new Blob([ia],{type:"image/png",endings:'transparent'});
-            var fd=new FormData();
-            console.log(blob);
-            fd.append('avatarFile',blob,'image.png');
-            var httprequest=new XMLHttpRequest();
-            httprequest.open('POST','/guest/avatar',true);
-            httprequest.send(fd);
-            httprequest.onreadystatechange= function () {
-                if(httprequest.status==200 && httprequest.readyState==4){
-                    console.log(httprequest.responseText);
-                    $('#returnImg').attr('src','/images/'+JSON.parse(httprequest.responseText).json);
-                }
-            };
-        };
+        var cropper = new Cropper({});
     }
 </script>
 </html>

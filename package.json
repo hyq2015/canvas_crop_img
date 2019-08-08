@@ -1,0 +1,20 @@
+{
+  "name": "canvas_crop_img",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyq2015/canvas_crop_img.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hyq2015/canvas_crop_img/issues"
+  },
+  "homepage": "https://github.com/hyq2015/canvas_crop_img#readme"
+}
