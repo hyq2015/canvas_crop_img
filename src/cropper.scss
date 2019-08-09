@@ -1,0 +1,77 @@
+.r-cropper-mask{
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 1000;
+  overflow: hidden;
+  .x-c-layer{
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,.5);
+    background-color: #fff;
+    display: inline-block;
+  }
+
+  .x-c-sbox{
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(0,255,255,0.5);
+    cursor: pointer;
+  }
+  .x-c-cbox{
+    margin: 20px auto 0;
+  }
+  .x-c-canvas{
+    display: inline-block;
+    vertical-align: top;
+    box-shadow: rgba(0, 0, 0, 0.5) 0 2px 4px;
+  }
+  .x-c-cbtn{
+    left: 0;
+    background-color: #fff;
+    color: rgba(0,0,0,.87);
+  }
+  .x-c-btn{
+    position: absolute;
+    bottom: 0;
+    height: 40px;
+    width: 50%;
+    text-align: center;
+    line-height: 40px;
+    cursor: pointer;
+    box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+    overflow: hidden;
+  }
+  .x-c-cutbtn{
+    right: 0;
+    background-color: #3f51b5;
+    color: #fff;
+    user-select:none;
+
+  }
+  .x-btn-mask{
+    opacity: 1;
+    //transition: opacity 280ms cubic-bezier(.4, 0, .2, 1);
+    background-color: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+  .ripple-circle{
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0, 0);
+    background-color: #f7ff59;
+    border-radius: 100%;
+    opacity: 0;
+  }
+}

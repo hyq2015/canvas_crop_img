@@ -2,40 +2,8 @@
 <html lang='en'>
 <head>
     <meta charset='UTF-8'>
-    <title>canvas裁剪图片,纯前端</title>
-    <style>
-        body{
-            padding: 10px;
-            box-sizing: border-box;
-            min-height: 500px;
-        }
-        .choose-box{
-            width: 150px;
-            height: 150px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            cursor: pointer;
-            background-color: rgba(0,255,255,0.5);
-        }
-        .outer{
-            width: 300px;
-            display: inline-block;
-            background-color: rgba(0,0,0,.5);
-            height: 600px;
-            position: relative;
-            margin-left: 400px;
-        }
-        .preview-box{
-            display: inline-block;
-        }
-        .img{
-            min-width: 300px;
-            max-width: 300px;
-            height: auto;
-        }
-    </style>
+    <title>canvas cropper</title>
+    <link rel="stylesheet" href="./dist/css/cropper.min.css">
 </head>
 <body>
 <div>
@@ -45,7 +13,9 @@
 <script src="src/cropper.js"></script>
 <script>
     window.onload=function () {
-        var cropper = new Cropper({});
+        var cropper = new Cropper({
+            el: 'imgFile'
+        });
     }
 </script>
 </html>

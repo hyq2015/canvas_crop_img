@@ -1,3 +1,11 @@
+/**
+ *  由于canvas只支持IE9及其以上版本浏览器，所以本控件涉及到的js语法也不考虑兼容IE9以下浏览器
+ */
+
+
+
+
+
 var EventUtil = {
     addHandler: function(element, type, handler) { // 添加事件处理器
         if (element.addEventListener) {
@@ -73,6 +81,47 @@ Dom.prototype.text = function (txt) {
     this.ele.innerText = txt;
     return this;
 };
+
+/**
+ *  addClass(className1, className2, className3)
+ *  @param classes
+ */
+Dom.prototype.addClass = function (classes) {
+    var oldClass = this.ele.className.replace(/\s+/g, " ").split(" "), i, len = oldClass.length, j, lenJ = arguments.length,
+        newArr = [];
+    for (j = 0; j < lenJ; j++) {
+        var isExist = false;
+        for (i = 0; i < len; i++) {
+            if (oldClass[i].toLowerCase() === arguments[j].trim().toLowerCase()) {
+                isExist = true;
+                break;
+            }
+        }
+        if (!isExist) {
+            newArr.push(arguments[j].trim().toLowerCase());
+        }
+    }
+    this.ele.className = oldClass.concat(newArr).join(" ");
+};
+
+/**
+ * removeClass(className1, className2, className3)
+ * @param classes
+ */
+Dom.prototype.removeClass = function (classes) {
+    var oldClass = this.ele.className.replace(/\s+/g, " ").split(" "), i, len = oldClass.length, j, lenJ = arguments.length;
+    for (j = 0; j < lenJ; j++) {
+        for (i = 0; i < len; i++) {
+            if (oldClass[i].toLowerCase() === arguments[j].trim().toLowerCase()) {
+                oldClass[i] = "";
+                break;
+            }
+        }
+    }
+    this.ele.className = oldClass.filter(function (item) {
+        return item !== "";
+    }).join(" ");
+};
 function Dom(tagName) {
     this.ele = document.createElement(tagName);
     this.getElement = function () {
@@ -83,6 +132,7 @@ function Dom(tagName) {
         return this;
     };
     this.create();
+    this.rippling = false;
 }
 function createDom() {
     var mask = new Dom('div'),
@@ -91,67 +141,58 @@ function createDom() {
         selectBox = new Dom('div'),
         showImg = new Dom('img'),
         canvas = new Dom('canvas'),
-        cutBtn = new Dom('div');
-    cutBtn
-        .css({
-            height: '40px',
-            width: '100%',
-            backgroundColor: '#00c8fb',
-            color: '#fff',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            textAlign: 'center',
-            lineHeight: '40px',
-            cursor: 'pointer'
-        })
-        .text("裁剪");
+        cutBtn = new Dom('div'),
+        cancelBtn = new Dom('div'),
+        btnMask = new Dom('div'),
+        rippleCircle = new Dom('div');
+
+    btnMask.addClass('x-btn-mask');
+    rippleCircle.addClass('ripple-circle');
+
+    cutBtn.text('裁剪');
+    cutBtn.addClass('x-c-cutbtn', 'x-c-btn');
+
+
+    cancelBtn.text('取消');
+    cancelBtn.addClass('x-c-cbtn', 'x-c-btn');
+
+    showImg.css({
+        minWidth: this.options.layerWidth + 'px',
+        maxWidth: this.options.layerWidth + 'px'
+    });
 
     canvas
         .attr({
             width: this.options.targetWidth,
             height: this.options.targetHeight,
-        })
-        .css({
-            display: 'inline-block',
-            verticalAlign: 'top'
         });
+    canvas.addClass('x-c-canvas');
 
     contentBox.css({
         width: this.options.layerWidth + this.options.targetWidth + 'px',
-        margin: '20px auto 0'
     });
+    contentBox.addClass('x-c-cbox');
+
     selectBox.css({
         width: this.options.cropperWidth + 'px',
         height: this.options.cropperWidth + 'px',
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        backgroundColor: 'rgba(0,255,255,0.5)',
-        cursor: 'pointer'
     });
+    selectBox.addClass('x-c-sbox');
+
     layerBox.css({
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
-        position: 'relative',
-        boxShadow: '0 2px 4px rgba(0,0,0,.5)',
-        backgroundColor: '#fff',
-        display: 'inline-block'
     });
-    mask.css({
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        bottom: 0,
-        zIndex: 1000,
-        overflow: 'hidden'
-    });
+    layerBox.addClass('x-c-layer');
 
+    mask.addClass('r-cropper-mask');
+
+    cutBtn.appendChild(rippleCircle);
+    cutBtn.appendChild(btnMask);
     layerBox.appendChild(selectBox);
     layerBox.appendChild(cutBtn);
+    layerBox.appendChild(cancelBtn);
+    layerBox.appendChild(showImg);
     contentBox.appendChild(layerBox);
     contentBox.appendChild(canvas);
     mask.appendChild(contentBox);
@@ -163,6 +204,10 @@ function createDom() {
     this.showImg = showImg.getElement();
     this.canvas = canvas.getElement();
     this.cutBtn = cutBtn.getElement();
+    this.btnMask = btnMask.getElement();
+    this.btnMaskDom = btnMask;
+    this.rippleCircle = rippleCircle;
+    this.ctx = canvas.getElement().getContext('2d');
 }
 function initEvent(_this) {
     var _selectBox = _this.selectBox;
@@ -192,12 +237,75 @@ function initEvent(_this) {
     EventUtil.addHandler(window, 'mouseup', function () {
         EventUtil.removeHandler(_selectBox, 'mousemove', handler)
     });
+    var fileInput = document.getElementById(_this.options.el);
+    EventUtil.addHandler(fileInput, 'change', function () {
+        var file=fileInput.files[0], reader=new FileReader();
+        _this.mask.css({
+            display: 'block'
+        });
+        EventUtil.addHandler(reader, 'load', function (e) {
+            var src = e.target.result, img = new Image();
+            _this.showImg.setAttribute('src', src);
+            EventUtil.addHandler(_this.showImg, 'load', function() {
+                _this.showWidth =  _this.showImg.offsetWidth;
+                _this.showHeight =  _this.showImg.offsetHeight;
+                img.src = src;
+                EventUtil.addHandler(img, 'load', function () {
+                    _this.scaleY = img.naturalHeight/_this.showHeight;
+                    _this.scaleX = img.naturalWidth/_this.showWidth;
+                });
+            });
+        });
+        reader.readAsDataURL(file);
+    });
+    EventUtil.addHandler(_this.cutBtn, 'click', function () {
+        var o = _this.options;
+        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+    });
+    EventUtil.addHandler(_this.btnMask, 'click', rippleHandler);
+    function rippleHandler(ev) {
+        if (_this.btnMaskDom.rippling) {
+            return;
+        }
+        _this.btnMaskDom.rippling = true;
+        var e = EventUtil.getEvent(ev),
+        rightMargin = Math.max(Math.abs(_this.options.layerWidth / 2 - e.offsetX), e.offsetX);
+        _this.rippleCircle.css({
+            left: e.offsetX + 'px',
+            top: e.offsetY + 'px',
+            width: rightMargin * 2 + 'px',
+            height: rightMargin * 2 + 'px',
+            opacity: 0.2,
+            transition: 'transform 400ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 400ms',
+            transform: 'translate(-50%, -50%) scale(1, 1)'
+        });
+        setTimeout(function () {
+            _this.rippleCircle.css({
+                opacity: 0,
+                transition: 'transform opacity 100ms'
+            });
+        }, 400);
+        setTimeout(function () {
+            _this.rippleCircle.css({
+                transform: 'translate(-50%, -50%) scale(0, 0)',
+                transition: ''
+            });
+            _this.btnMaskDom.rippling = false;
+        },520)
+    }
 }
 function initParams() {
     this.originX = 0;
     this.originY = 0;
     this.originLeft = 0;
     this.originTop = 0;
+    this.showWidth = 0;
+    this.showHeight = 0;
+    this.scaleY = 0;
+    this.scaleY = 0;
     // TO_DO 完成图片预览,裁剪
 }
 function Cropper(option) {
@@ -207,7 +315,7 @@ function Cropper(option) {
         layerHeight: 600,
         targetWidth: option.targetWidth || 150,
         targetHeight: option.targetHeight || 150,
-        el: 'crop-file-select'
+        el: option.el || 'crop-file-select'
     };
     this.initParams = initParams.call(this);
     this.createDom = createDom.call(this);
