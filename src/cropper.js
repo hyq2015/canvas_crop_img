@@ -279,22 +279,22 @@ function initEvent(_this) {
             width: rightMargin * 2 + 'px',
             height: rightMargin * 2 + 'px',
             opacity: 0.2,
-            transition: 'transform 400ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 400ms',
+            transition: 'transform 200ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 280ms',
             transform: 'translate(-50%, -50%) scale(1, 1)'
         });
         setTimeout(function () {
             _this.rippleCircle.css({
                 opacity: 0,
-                transition: 'transform opacity 100ms'
+                transition: 'transform opacity 60ms'
             });
-        }, 400);
+        }, 280);
         setTimeout(function () {
             _this.rippleCircle.css({
                 transform: 'translate(-50%, -50%) scale(0, 0)',
                 transition: ''
             });
             _this.btnMaskDom.rippling = false;
-        },520)
+        },400)
     }
 }
 function initParams() {
