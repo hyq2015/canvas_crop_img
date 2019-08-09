@@ -132,7 +132,67 @@ function Dom(tagName) {
         return this;
     };
     this.create();
+}
+// 按钮的波纹效果应该属于按钮自身,在按钮创建时就配置好
+ButtonDom.prototype = Dom.prototype;
+ButtonDom.prototype.constructor = ButtonDom;
+function ButtonDom(tagName, text, width) {
+    var btnMask = new Dom('div'),
+        rippleCircle = new Dom('div'),
+        btn = new Dom(tagName),
+        fragment = document.createDocumentFragment();
+
+
+    btnMask.addClass('x-btn-mask');
+    rippleCircle.addClass('ripple-circle');
+    var _this = this;
+    btn.css({
+        width: width + 'px'
+    });
+    btn.text(text);
+
+    btn.appendChild(btnMask);
+    btn.appendChild(rippleCircle);
+    // fragment.appendChild(this.getElement());
+    // return fragment;
+    fragment.appendChild(btn.getElement());
+
     this.rippling = false;
+    this.ele = fragment;
+    this.btn = btn;
+    this.btnMask = btnMask;
+    EventUtil.addHandler(btnMask.getElement(), 'click', rippleHandler);
+    function rippleHandler(ev) {
+        if (_this.rippling) {
+            return;
+        }
+        _this.rippling = true;
+        console.log();
+        var e = EventUtil.getEvent(ev),
+            rightMargin = Math.max(Math.abs(_this.btn.getElement().offsetWidth - e.offsetX), e.offsetX);
+        rippleCircle.css({
+            left: e.offsetX + 'px',
+            top: e.offsetY + 'px',
+            width: rightMargin * 2 + 'px',
+            height: rightMargin * 2 + 'px',
+            opacity: 0.3,
+            transition: 'transform 200ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 160ms cubic-bezier(.25, 0.46, .45, 0.94)',
+            transform: 'translate(-50%, -50%) scale(1, 1)'
+        });
+        setTimeout(function () {
+            rippleCircle.css({
+                opacity: 0,
+                transition: 'transform opacity 100ms'
+            });
+        }, 200);
+        setTimeout(function () {
+            rippleCircle.css({
+                transform: 'translate(-50%, -50%) scale(0, 0)',
+                transition: 'none'
+            });
+            _this.rippling = false;
+        },300)
+    }
 }
 function createDom() {
     var mask = new Dom('div'),
@@ -141,20 +201,11 @@ function createDom() {
         selectBox = new Dom('div'),
         showImg = new Dom('img'),
         canvas = new Dom('canvas'),
-        cutBtn = new Dom('div'),
-        cancelBtn = new Dom('div'),
-        btnMask = new Dom('div'),
-        rippleCircle = new Dom('div');
+        cutBtn = new ButtonDom('div', this.options.okText, this.options.btnWidth),
+        cancelBtn = new ButtonDom('div', this.options.cancelText, this.options.btnWidth);
 
-    btnMask.addClass('x-btn-mask');
-    rippleCircle.addClass('ripple-circle');
-
-    cutBtn.text('裁剪');
-    cutBtn.addClass('x-c-cutbtn', 'x-c-btn');
-
-
-    cancelBtn.text('取消');
-    cancelBtn.addClass('x-c-cbtn', 'x-c-btn');
+    cutBtn.btn.addClass('x-c-cutbtn', 'x-c-btn');
+    cancelBtn.btn.addClass('x-c-cbtn', 'x-c-btn');
 
     showImg.css({
         minWidth: this.options.layerWidth + 'px',
@@ -187,8 +238,6 @@ function createDom() {
 
     mask.addClass('r-cropper-mask');
 
-    cutBtn.appendChild(rippleCircle);
-    cutBtn.appendChild(btnMask);
     layerBox.appendChild(selectBox);
     layerBox.appendChild(cutBtn);
     layerBox.appendChild(cancelBtn);
@@ -203,10 +252,8 @@ function createDom() {
     this.selectBox = selectBox.getElement();
     this.showImg = showImg.getElement();
     this.canvas = canvas.getElement();
-    this.cutBtn = cutBtn.getElement();
-    this.btnMask = btnMask.getElement();
-    this.btnMaskDom = btnMask;
-    this.rippleCircle = rippleCircle;
+    this.okBtn = cutBtn.btnMask.getElement();
+    this.cancelBtn = cancelBtn.btnMask.getElement();
     this.ctx = canvas.getElement().getContext('2d');
 }
 function initEvent(_this) {
@@ -239,7 +286,11 @@ function initEvent(_this) {
     });
     var fileInput = document.getElementById(_this.options.el);
     EventUtil.addHandler(fileInput, 'change', function () {
-        var file=fileInput.files[0], reader=new FileReader();
+        var file=fileInput.files[0];
+        if (!file) {
+            return;
+        }
+        var reader=new FileReader();
         _this.mask.css({
             display: 'block'
         });
@@ -258,44 +309,19 @@ function initEvent(_this) {
         });
         reader.readAsDataURL(file);
     });
-    EventUtil.addHandler(_this.cutBtn, 'click', function () {
+
+    EventUtil.addHandler(_this.okBtn, 'click', function () {
         var o = _this.options;
         var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
             newY = parseInt(getComputedStyle(_this.selectBox, null).top);
         _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
         _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
     });
-    EventUtil.addHandler(_this.btnMask, 'click', rippleHandler);
-    function rippleHandler(ev) {
-        if (_this.btnMaskDom.rippling) {
-            return;
-        }
-        _this.btnMaskDom.rippling = true;
-        var e = EventUtil.getEvent(ev),
-        rightMargin = Math.max(Math.abs(_this.options.layerWidth / 2 - e.offsetX), e.offsetX);
-        _this.rippleCircle.css({
-            left: e.offsetX + 'px',
-            top: e.offsetY + 'px',
-            width: rightMargin * 2 + 'px',
-            height: rightMargin * 2 + 'px',
-            opacity: 0.2,
-            transition: 'transform 200ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 280ms',
-            transform: 'translate(-50%, -50%) scale(1, 1)'
+    EventUtil.addHandler(_this.cancelBtn, 'click', function () {
+        _this.mask.css({
+            display: 'none'
         });
-        setTimeout(function () {
-            _this.rippleCircle.css({
-                opacity: 0,
-                transition: 'transform opacity 60ms'
-            });
-        }, 280);
-        setTimeout(function () {
-            _this.rippleCircle.css({
-                transform: 'translate(-50%, -50%) scale(0, 0)',
-                transition: ''
-            });
-            _this.btnMaskDom.rippling = false;
-        },400)
-    }
+    });
 }
 function initParams() {
     this.originX = 0;
@@ -306,7 +332,6 @@ function initParams() {
     this.showHeight = 0;
     this.scaleY = 0;
     this.scaleY = 0;
-    // TO_DO 完成图片预览,裁剪
 }
 function Cropper(option) {
     this.options = {
@@ -315,7 +340,10 @@ function Cropper(option) {
         layerHeight: 600,
         targetWidth: option.targetWidth || 150,
         targetHeight: option.targetHeight || 150,
-        el: option.el || 'crop-file-select'
+        btnWidth: option.btnWidth || 200,
+        el: option.el || 'crop-file-select',
+        okText: option.okText || '确定',
+        cancelText: option.cancelText || '取消',
     };
     this.initParams = initParams.call(this);
     this.createDom = createDom.call(this);
@@ -324,81 +352,3 @@ function Cropper(option) {
     this.initEvents(this);
 
 }
-
-
-/*
-var can=document.getElementById('myCan'),
-btn=document.getElementById('btn'),
-ctx=can.getContext('2d'),
-imgFile = document.getElementById('imgFile'),
-demoImg = document.getElementById('demoImg'),
-chooseBox = document.getElementById('chooseBox'),
-cutBtn = document.getElementById('cut'),
-scaleY = 1, scaleX = 1,
-originX = 0, originY = 0, originLeft = 0, originTop = 0,
-croperWidth = 150;
-
-EventUtil.addHandler(imgFile, 'change', function () {
-    var file=imgFile.files[0], reader=new FileReader(), showWidth = 0, showHeight = 0;
-    EventUtil.addHandler(reader, 'load', function (e) {
-        var src = e.target.result, img = new Image();
-        demoImg.setAttribute('src', src);
-        EventUtil.addHandler(demoImg, 'load', function() {
-            showWidth =  demoImg.offsetWidth;
-            showHeight =  demoImg.offsetHeight;
-            img.src = src;
-            EventUtil.addHandler(img, 'load', function () {
-                scaleY = img.naturalHeight/showHeight;
-                scaleX = img.naturalWidth/showWidth;
-            });
-        });
-    });
-    reader.readAsDataURL(file);
-});
-
-EventUtil.addHandler(window, 'mouseup', function () {
-    EventUtil.removeHandler(chooseBox, 'mousemove', mouseMoveHandler)
-});
-EventUtil.addHandler(chooseBox, 'mousedown', function (ev) {
-    EventUtil.addHandler(chooseBox, 'mousemove', mouseMoveHandler);
-    var e = EventUtil.getEvent(ev);
-    originX = e.clientX;
-    originY = e.clientY;
-    originLeft = parseInt(getComputedStyle(chooseBox, null).left);
-    originTop = parseInt(getComputedStyle(chooseBox, null).top);
-
-});
-
-EventUtil.addHandler(cutBtn, 'click', function () {
-    var newX = parseInt(getComputedStyle(chooseBox, null).left),
-    newY = parseInt(getComputedStyle(chooseBox, null).top);
-    ctx.clearRect(0,0,600,600);
-    ctx.drawImage(demoImg, newX*scaleX, newY*scaleY, croperWidth*scaleX, croperWidth*scaleY, 0, 0, 150, 150);
-});
-btn.onclick=function () {
-    console.log(1111);
-    var data=can.toDataURL();
-    console.log(data);
-    return;
-    data=data.split(',')[1];
-    data=window.atob(data);
-
-    var ia = new Uint8Array(data.length);
-    for (var i = 0; i < data.length; i++) {
-        ia[i] = data.charCodeAt(i);
-    }
-    var blob=new Blob([ia],{type:'image/png',endings:'transparent'});
-    var fd=new FormData();
-    console.log(blob);
-    fd.append('avatarFile',blob,'image.png');
-    var httprequest=new XMLHttpRequest();
-    httprequest.open('POST','/guest/avatar',true);
-    httprequest.send(fd);
-    httprequest.onreadystatechange= function () {
-        if(httprequest.status==200 && httprequest.readyState==4){
-            console.log(httprequest.responseText);
-            $('#returnImg').attr('src','/images/'+JSON.parse(httprequest.responseText).json);
-        }
-    };
-};
-*/
