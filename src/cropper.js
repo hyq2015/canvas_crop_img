@@ -169,12 +169,14 @@ function ButtonDom(tagName, text, width) {
         _this.rippling = true;
         console.log();
         var e = EventUtil.getEvent(ev),
-            rightMargin = Math.max(Math.abs(_this.btn.getElement().offsetWidth - e.offsetX), e.offsetX);
+            rightMargin = Math.max(Math.abs(_this.btn.getElement().offsetWidth - e.offsetX), e.offsetX),
+            topMargin = Math.max(Math.abs(_this.btn.getElement().offsetHeight - e.offsetY), e.offsetY),
+            finalCircleRadius = Math.sqrt(Math.pow(rightMargin, 2) + Math.pow(topMargin, 2));
         rippleCircle.css({
             left: e.offsetX + 'px',
             top: e.offsetY + 'px',
-            width: rightMargin * 2 + 'px',
-            height: rightMargin * 2 + 'px',
+            width: finalCircleRadius * 2 + 'px',
+            height: finalCircleRadius * 2 + 'px',
             opacity: 0.3,
             transition: 'transform 200ms cubic-bezier(.25, 0.46, .45, 0.94), opacity 160ms cubic-bezier(.25, 0.46, .45, 0.94)',
             transform: 'translate(-50%, -50%) scale(1, 1)'
@@ -202,7 +204,8 @@ function createDom() {
         showImg = new Dom('img'),
         canvas = new Dom('canvas'),
         cutBtn = new ButtonDom('div', this.options.okText, this.options.btnWidth),
-        cancelBtn = new ButtonDom('div', this.options.cancelText, this.options.btnWidth);
+        cancelBtn = new ButtonDom('div', this.options.cancelText, this.options.btnWidth),
+        originInputBtn = document.getElementById(this.options.el);
 
     cutBtn.btn.addClass('x-c-cutbtn', 'x-c-btn');
     cancelBtn.btn.addClass('x-c-cbtn', 'x-c-btn');
@@ -247,6 +250,10 @@ function createDom() {
     mask.appendChild(contentBox);
     document.body.appendChild(mask.getElement());
 
+    var newDom = new Dom('div');
+    newDom.appendChild(originInputBtn.cloneNode(false));
+    originInputBtn.parentNode.replaceChild(newDom.getElement(), originInputBtn);
+
     this.mask = mask;
     this.layerBox = layerBox.getElement();
     this.selectBox = selectBox.getElement();
@@ -282,10 +289,16 @@ function initEvent(_this) {
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
     });
     EventUtil.addHandler(window, 'mouseup', function () {
-        EventUtil.removeHandler(_selectBox, 'mousemove', handler)
+        EventUtil.removeHandler(_selectBox, 'mousemove', handler);
+        var o = _this.options;
+        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
     });
     var fileInput = document.getElementById(_this.options.el);
-    EventUtil.addHandler(fileInput, 'change', function () {
+    EventUtil.addHandler(fileInput, 'input', function () {
+        console.log("input");
         var file=fileInput.files[0];
         if (!file) {
             return;
@@ -311,13 +324,56 @@ function initEvent(_this) {
     });
 
     EventUtil.addHandler(_this.okBtn, 'click', function () {
-        var o = _this.options;
-        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
-            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+        var fragment = document.createDocumentFragment(), parentNode = document.getElementById(_this.options.el).parentNode,
+            imgListDom = document.getElementById('r-c-imglist'), imgOuter;
+        fileInput.value = '';
+        _this.mask.css({
+            display: 'none'
+        });
+        // maxFileNumber
+        if (_this.options.maxFileNumber > 1) {
+            if (_this.fileList.length >= _this.options.maxFileNumber) {
+                var errorRemind = new Dom('div');
+                errorRemind.text('最多只能上传' + _this.options.maxFileNumber + '张图片');
+                imgListDom.appendChild(errorRemind.getElement());
+                return;
+            } else {
+                _this.fileList.push(_this.canvas.toDataURL('base64'));
+            }
+
+        } else {
+            _this.fileList = [_this.canvas.toDataURL('base64')];
+        }
+        if (_this.fileList.length > 0) {
+            for (var i = 0; i < _this.fileList.length; i++) {
+                var img = new Dom('img');
+                img.css({
+                    width: _this.options.targetWidth + 'px',
+                    height: _this.options.targetWidth + 'px'
+                });
+                img.attr({
+                    src: _this.fileList[i]
+                });
+
+                fragment.appendChild(img.getElement());
+            }
+            if (imgListDom) {
+                imgListDom.innerHTML = '';
+                imgListDom.appendChild(fragment);
+
+            } else {
+                imgOuter = new Dom('div');
+                imgOuter.addClass('r-c-imgs');
+                imgOuter.attr({
+                    id: 'r-c-imglist'
+                });
+                imgOuter.appendChild(fragment);
+                parentNode.appendChild(imgOuter.getElement());
+            }
+        }
     });
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
+        fileInput.value = '';
         _this.mask.css({
             display: 'none'
         });
@@ -332,6 +388,12 @@ function initParams() {
     this.showHeight = 0;
     this.scaleY = 0;
     this.scaleY = 0;
+    this.fileList = [];
+}
+function initMethods() {
+    this.getFiles = function() {
+        return this.fileList;
+    }
 }
 function Cropper(option) {
     this.options = {
@@ -344,11 +406,12 @@ function Cropper(option) {
         el: option.el || 'crop-file-select',
         okText: option.okText || '确定',
         cancelText: option.cancelText || '取消',
+        maxFileNumber: option.maxFileNumber || 1
     };
     this.initParams = initParams.call(this);
     this.createDom = createDom.call(this);
-
     this.initEvents = initEvent;
+    this.initMethods = initMethods.call(this);
     this.initEvents(this);
 
 }
