@@ -372,7 +372,7 @@ function initEvent(_this) {
     });
 
     var fileInput = document.getElementById(_this.options.el);
-    
+
     EventUtil.addHandler(fileInput, 'click', function (e) {
         if (_this.options.maxFileNumber > 1) {
             if (_this.fileList.length >= _this.options.maxFileNumber) {
