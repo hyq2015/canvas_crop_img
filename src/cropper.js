@@ -2,10 +2,6 @@
  *  由于canvas只支持IE9及其以上版本浏览器，所以本控件涉及到的js语法也不考虑兼容IE9以下浏览器
  */
 
-
-
-
-
 var EventUtil = {
     addHandler: function(element, type, handler) { // 添加事件处理器
         if (element.addEventListener) {
@@ -46,6 +42,10 @@ var EventUtil = {
         }
     }
 };
+// 只支持通过类名或者ID进行元素选择
+function $(idOrClassOrTagName) {
+    return new Dom(idOrClassOrTagName);
+}
 // 辅助函数, 将驼峰命名的样式名称转换成中横线
 function styleNameHelper(key) {
     var _key = key.trim(), i;
@@ -57,28 +57,80 @@ function styleNameHelper(key) {
     }
     return _key;
 }
+Dom.prototype.hide = function(display) {
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            this.ele[i].style.display = 'none';
+        }
+    } else {
+        this.ele.style.display = display || 'none';
+    }
+    return this;
+};
+Dom.prototype.show = function(display) {
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            this.ele[i].style.display = display || 'block';
+        }
+    } else {
+        this.ele.style.display = display || 'block';
+    }
+    return this;
+};
 Dom.prototype.css = function(obj) {
-    for(var key in obj) {
-        this.ele.style[styleNameHelper(key)] = obj[key];
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            for(var key in obj) {
+                this.ele[i].style[styleNameHelper(key)] = obj[key];
+            }
+        }
+    } else {
+        for(var key in obj) {
+            this.ele.style[styleNameHelper(key)] = obj[key];
+        }
     }
     return this;
 };
 Dom.prototype.attr = function(attributeObj) {
-    for(var key in attributeObj) {
-        this.ele.setAttribute(key, attributeObj[key]);
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            for(var key in attributeObj) {
+                this.ele[i].setAttribute(key, attributeObj[key]);
+            }
+        }
+    } else {
+        for(var key in attributeObj) {
+            this.ele.setAttribute(key, attributeObj[key]);
+        }
     }
     return this;
 };
 Dom.prototype.appendChild = function (dom) {
-    if (dom instanceof Dom) {
-        this.ele.appendChild(dom.ele);
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            if (dom instanceof Dom) {
+                this.ele[i].appendChild(dom.ele);
+            } else {
+                this.ele[i].appendChild(dom);
+            }
+        }
     } else {
-        this.ele.appendChild(dom);
+        if (dom instanceof Dom) {
+            this.ele.appendChild(dom.ele);
+        } else {
+            this.ele.appendChild(dom);
+        }
     }
     return this;
 };
 Dom.prototype.text = function (txt) {
-    this.ele.innerText = txt;
+    if (this.ele.length > 0) {
+        for (var i = 0; i < this.ele.length; i++) {
+            this.ele[i].innerText = txt;
+        }
+    } else {
+        this.ele.innerText = txt;
+    }
     return this;
 };
 
@@ -101,7 +153,8 @@ Dom.prototype.addClass = function (classes) {
             newArr.push(arguments[j].trim().toLowerCase());
         }
     }
-    this.ele.className = oldClass.concat(newArr).join(" ");
+    this.ele.className = oldClass.concat(newArr).join(" ").trim();
+    return this;
 };
 
 /**
@@ -121,25 +174,35 @@ Dom.prototype.removeClass = function (classes) {
     this.ele.className = oldClass.filter(function (item) {
         return item !== "";
     }).join(" ");
+    return this;
 };
 function Dom(tagName) {
-    this.ele = document.createElement(tagName);
-    this.getElement = function () {
-        return this.ele;
-    };
     this.create = function() {
         document.createElement(tagName);
         return this;
     };
-    this.create();
+    this.getElement = function () {
+        return this.ele;
+    };
+
+    if (tagName.indexOf('.') === -1 && tagName.indexOf('#') === -1) {
+        this.ele = document.createElement(tagName);
+        this.create();
+    } else {
+        if (tagName.indexOf('#') > -1) {
+            this.ele = document.getElementById(tagName.slice(1));
+        } else if(tagName.indexOf('.') > -1) {
+            this.ele = document.getElementsByClassName(tagName.slice(1));
+        }
+    }
 }
 // 按钮的波纹效果应该属于按钮自身,在按钮创建时就配置好
 ButtonDom.prototype = Dom.prototype;
 ButtonDom.prototype.constructor = ButtonDom;
 function ButtonDom(tagName, text, width) {
-    var btnMask = new Dom('div'),
-        rippleCircle = new Dom('div'),
-        btn = new Dom(tagName),
+    var btnMask = $('div'),
+        rippleCircle = $('div'),
+        btn = $(tagName),
         fragment = document.createDocumentFragment();
 
 
@@ -197,12 +260,12 @@ function ButtonDom(tagName, text, width) {
     }
 }
 function createDom() {
-    var mask = new Dom('div'),
-        contentBox = new Dom('div'),
-        layerBox = new Dom('div'),
-        selectBox = new Dom('div'),
-        showImg = new Dom('img'),
-        canvas = new Dom('canvas'),
+    var mask = $('div'),
+        contentBox = $('div'),
+        layerBox = $('div'),
+        selectBox = $('div'),
+        showImg = $('img'),
+        canvas = $('canvas'),
         cutBtn = new ButtonDom('div', this.options.okText, this.options.btnWidth),
         cancelBtn = new ButtonDom('div', this.options.cancelText, this.options.btnWidth),
         originInputBtn = document.getElementById(this.options.el);
@@ -219,25 +282,21 @@ function createDom() {
         .attr({
             width: this.options.targetWidth,
             height: this.options.targetHeight,
-        });
-    canvas.addClass('x-c-canvas');
+        }).addClass('x-c-canvas');
 
     contentBox.css({
         width: this.options.layerWidth + this.options.targetWidth + 'px',
-    });
-    contentBox.addClass('x-c-cbox');
+    }).addClass('x-c-cbox');
 
     selectBox.css({
         width: this.options.cropperWidth + 'px',
         height: this.options.cropperWidth + 'px',
-    });
-    selectBox.addClass('x-c-sbox');
+    }).addClass('x-c-sbox');
 
     layerBox.css({
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
-    });
-    layerBox.addClass('x-c-layer');
+    }).addClass('x-c-layer');
 
     mask.addClass('r-cropper-mask');
 
@@ -250,8 +309,20 @@ function createDom() {
     mask.appendChild(contentBox);
     document.body.appendChild(mask.getElement());
 
-    var newDom = new Dom('div');
-    newDom.appendChild(originInputBtn.cloneNode(false));
+    // 覆盖页面上原有的input type=file
+
+    var newDom = $('div').addClass('outer-dom'),
+        inputMask = $('div').css({
+            width: this.options.targetWidth + 'px',
+            height: this.options.targetHeight + 'px',
+        }).addClass('x-c-inputmask'),
+        inputImg = $('i').addClass('x-c-upload'),
+        cloneBtn = originInputBtn.cloneNode(false);
+    cloneBtn.style.display = 'none';
+    cloneBtn.setAttribute('name', 'file');
+    inputMask.appendChild(inputImg);
+    inputMask.appendChild(cloneBtn);
+    newDom.appendChild(inputMask);
     originInputBtn.parentNode.replaceChild(newDom.getElement(), originInputBtn);
 
     this.mask = mask;
@@ -262,6 +333,9 @@ function createDom() {
     this.okBtn = cutBtn.btnMask.getElement();
     this.cancelBtn = cancelBtn.btnMask.getElement();
     this.ctx = canvas.getElement().getContext('2d');
+    this.inputMask = inputMask.getElement();
+    this.cloneInputBtn = cloneBtn;
+
 }
 function initEvent(_this) {
     var _selectBox = _this.selectBox;
@@ -296,35 +370,73 @@ function initEvent(_this) {
         _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
         _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
     });
+
     var fileInput = document.getElementById(_this.options.el);
-    EventUtil.addHandler(fileInput, 'input', function () {
-        console.log("input");
-        var file=fileInput.files[0];
-        if (!file) {
-            return;
+    
+    EventUtil.addHandler(fileInput, 'click', function (e) {
+        if (_this.options.maxFileNumber > 1) {
+            if (_this.fileList.length >= _this.options.maxFileNumber) {
+                var imgListDom = document.getElementById('r-c-imglist');
+                if (document.getElementById('x-c-error')) {
+                    $('#x-c-error').show();
+                } else {
+                    var errorRemind = $('div')
+                        .attr({
+                            id: 'x-c-error'
+                        })
+                        .css({
+                            position: 'absolute',
+                            bottom: '-20px'
+                        })
+                        .text('最多只能上传' + _this.options.maxFileNumber + '张图片');
+                    imgListDom.appendChild(errorRemind.getElement());
+                }
+                EventUtil.preventDefault(e);
+            }
         }
-        var reader=new FileReader();
+
+    });
+    EventUtil.addHandler(fileInput, 'input', function () {
+        inputChangeHandler();
+    });
+
+    function inputChangeHandler(isRevise) {
+        var file=fileInput.files[0], reader=new FileReader();
+        if (!isRevise) {
+            if (!file) {
+                return;
+            }
+            reader.readAsDataURL(file);
+            EventUtil.addHandler(reader, 'load', readerHandler);
+        } else {
+            readerHandler(isRevise);
+            _this.selectBox.style.left = isRevise.left;
+            _this.selectBox.style.top = isRevise.top;
+        }
+
         _this.mask.css({
             display: 'block'
         });
-        EventUtil.addHandler(reader, 'load', function (e) {
-            var src = e.target.result, img = new Image();
-            _this.showImg.setAttribute('src', src);
-            EventUtil.addHandler(_this.showImg, 'load', function() {
-                _this.showWidth =  _this.showImg.offsetWidth;
-                _this.showHeight =  _this.showImg.offsetHeight;
-                img.src = src;
-                EventUtil.addHandler(img, 'load', function () {
-                    _this.scaleY = img.naturalHeight/_this.showHeight;
-                    _this.scaleX = img.naturalWidth/_this.showWidth;
-                });
+    }
+
+    function readerHandler(e) {
+        var src = e.target ? e.target.result : e, img = new Image();
+        _this.showImg.setAttribute('src', src.originUrl || src);
+        _this.currentImgUrl = src.originUrl || src;
+        EventUtil.addHandler(_this.showImg, 'load', function() {
+            _this.showWidth =  _this.showImg.offsetWidth;
+            _this.showHeight =  _this.showImg.offsetHeight;
+            img.src = src.originUrl || src;
+            EventUtil.addHandler(img, 'load', function () {
+                _this.scaleY = img.naturalHeight/_this.showHeight;
+                _this.scaleX = img.naturalWidth/_this.showWidth;
             });
         });
-        reader.readAsDataURL(file);
-    });
+    }
 
+    // 裁剪图片
     EventUtil.addHandler(_this.okBtn, 'click', function () {
-        var fragment = document.createDocumentFragment(), parentNode = document.getElementById(_this.options.el).parentNode,
+        var fragment = document.createDocumentFragment(), parentNode = document.getElementById(_this.options.el).parentNode.parentNode,
             imgListDom = document.getElementById('r-c-imglist'), imgOuter;
         fileInput.value = '';
         _this.mask.css({
@@ -332,52 +444,107 @@ function initEvent(_this) {
         });
         // maxFileNumber
         if (_this.options.maxFileNumber > 1) {
-            if (_this.fileList.length >= _this.options.maxFileNumber) {
-                var errorRemind = new Dom('div');
-                errorRemind.text('最多只能上传' + _this.options.maxFileNumber + '张图片');
-                imgListDom.appendChild(errorRemind.getElement());
-                return;
+            // currentImgUrl
+            if (_this.isRevise) {
+                _this.fileList[_this.reviseObj.index].newUrl = _this.canvas.toDataURL('base64');
             } else {
-                _this.fileList.push(_this.canvas.toDataURL('base64'));
+                _this.fileList.push({
+                    originUrl: _this.currentImgUrl,
+                    newUrl: _this.canvas.toDataURL('base64'),
+                    left: _this.selectBox.style.left,
+                    top: _this.selectBox.style.top
+                });
             }
 
         } else {
-            _this.fileList = [_this.canvas.toDataURL('base64')];
+            _this.fileList = [{
+                originUrl: _this.currentImgUrl,
+                newUrl: _this.canvas.toDataURL('base64'),
+                left: _this.selectBox.style.left,
+                top: _this.selectBox.style.top
+            }];
         }
         if (_this.fileList.length > 0) {
             for (var i = 0; i < _this.fileList.length; i++) {
-                var img = new Dom('img');
-                img.css({
+                var img = $('img'),
+                    showImg = $('div'),
+                    showImgMask = $('div'),
+                    deleteImgIcon = $('i'),
+                    zoomImgIcon = $('i'),
+                    reviseImgIcon = $('i');
+                deleteImgIcon.addClass('x-c-delteicon x-c-icon').attr({title: '删除', 'data-index': i});
+                reviseImgIcon.addClass('x-c-reviseicon x-c-icon').attr({title: '修改', 'data-index': i});
+                zoomImgIcon.addClass('x-c-zoomicon x-c-icon').attr({title: '查看', 'data-index': i});
+                showImg.css({
                     width: _this.options.targetWidth + 'px',
-                    height: _this.options.targetWidth + 'px'
+                    height: _this.options.targetWidth + 'px',
+                }).addClass('x-c-simg');
+                showImgMask.css({
+                    // lineHeight: _this.options.targetHeight + 'px'
+                }).addClass('x-c-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
+                img.css({
+                    width: '100%',
+                    height: '100%',
+                }).attr({
+                    src: _this.fileList[i].newUrl
                 });
-                img.attr({
-                    src: _this.fileList[i]
-                });
-
-                fragment.appendChild(img.getElement());
+                showImg.appendChild(showImgMask).appendChild(img);
+                fragment.appendChild(showImg.getElement());
             }
             if (imgListDom) {
                 imgListDom.innerHTML = '';
                 imgListDom.appendChild(fragment);
 
             } else {
-                imgOuter = new Dom('div');
-                imgOuter.addClass('r-c-imgs');
-                imgOuter.attr({
-                    id: 'r-c-imglist'
-                });
-                imgOuter.appendChild(fragment);
-                parentNode.appendChild(imgOuter.getElement());
+                imgOuter = $('div')
+                    .addClass('r-c-imgs')
+                    .attr({
+                        id: 'r-c-imglist'
+                    })
+                    .css({
+                        display: 'inline-block',
+                        height: _this.options.targetHeight + 'px'
+                    }).appendChild(fragment);
+                parentNode.insertBefore(imgOuter.getElement(), _this.inputMask);
+                EventUtil.addHandler(imgOuter.getElement(), 'click', function (e) {
+                    var target = EventUtil.getTarget(e);
+                    if (target.tagName.toUpperCase() === 'I') {
+                        var index = target.getAttribute('data-index');
+                        _this.reviseObj = {
+                            index: index,
+                            originUrl: _this.fileList[index].originUrl,
+                            newUrl: _this.fileList[index].newUrl,
+                            left: _this.fileList[index].left,
+                            top: _this.fileList[index].top
+                        };
+                        _this.isRevise = true;
+
+                        inputChangeHandler(_this.reviseObj);
+
+                        var o = _this.options;
+                        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+                            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+                        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+                        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+                    }
+                })
             }
+            _this.isRevise = false;
+            _this.reviseIndex = 0;
         }
     });
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
         fileInput.value = '';
+        _this.isRevise = false;
+        _this.reviseObj = null;
         _this.mask.css({
             display: 'none'
         });
     });
+
+    EventUtil.addHandler(_this.inputMask, 'click', function () {
+        _this.cloneInputBtn.click();
+    })
 }
 function initParams() {
     this.originX = 0;
@@ -389,6 +556,9 @@ function initParams() {
     this.scaleY = 0;
     this.scaleY = 0;
     this.fileList = [];
+    this.currentImgUrl = '';
+    this.isRevise = false;
+    this.reviseObj = null;
 }
 function initMethods() {
     this.getFiles = function() {

@@ -7,6 +7,7 @@ var uglify = require('gulp-uglify');
 var del =require('del');
 var postcss =require('gulp-postcss');
 var autoprefixer =require('autoprefixer');
+var gulpCopy =require('gulp-copy');
 sass.compiler = require('node-sass');
 
 function styles() {
@@ -25,6 +26,11 @@ function scripts() {
         .pipe(gulp.dest('./dist/js'))
 }
 
+function staticFile() {
+    return gulp.src('src/*.woff')
+        .pipe(gulpCopy('./dist/css', {prefix: 1}))
+}
+
 function watch() {
     gulp.watch('./src/**/*.scss', styles);
     gulp.watch('./src/**/*.js', scripts);
@@ -34,7 +40,7 @@ function clean() {
     return del(['dist'])
 }
 
-var build = gulp.series(clean, gulp.parallel(styles, scripts));
+var build = gulp.series(clean, gulp.parallel(styles, scripts, staticFile));
 gulp.task('build', build);
 gulp.task('default', build);
 watch();
