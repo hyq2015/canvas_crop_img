@@ -85,6 +85,7 @@
 }
 .r-c-imgs{
   position: relative;
+  display: inline-block;
 }
 .x-c-delteicon,.x-c-reviseicon,.x-c-zoomicon{
   font-family: x-icon-font;
@@ -113,7 +114,7 @@
   margin-right: 5px;
   position: relative;
   top: 50%;
-  margin-top: -10px;
+  transform: translate(0, -50%);
   display: inline-block;
   cursor: pointer;
   &:last-of-type{
@@ -156,4 +157,11 @@
   &:before{
     content: "\e6d9"
   }
+}
+.x-c-error{
+  position: absolute;
+  bottom: -20px;
+}
+.x-c-input{
+  display: none;
 }

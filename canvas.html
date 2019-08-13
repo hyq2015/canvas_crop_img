@@ -6,8 +6,7 @@
     <link rel="stylesheet" href="./dist/css/cropper.min.css">
 </head>
 <body>
-<div>
-    <input type='file' id='imgFile'>
+<div id="imgFile">
 </div>
 </body>
 <script src="src/cropper.js"></script>
@@ -15,7 +14,9 @@
     window.onload=function () {
         var cropper = new Cropper({
             el: 'imgFile',
-            maxFileNumber: 2
+            maxFileNumber: 2,
+            targetWidth: 80,
+            targetHeight: 80
         });
     }
 </script>

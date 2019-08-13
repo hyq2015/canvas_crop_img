@@ -309,21 +309,20 @@ function createDom() {
     mask.appendChild(contentBox);
     document.body.appendChild(mask.getElement());
 
-    // 覆盖页面上原有的input type=file
-
     var newDom = $('div').addClass('outer-dom'),
         inputMask = $('div').css({
             width: this.options.targetWidth + 'px',
             height: this.options.targetHeight + 'px',
         }).addClass('x-c-inputmask'),
         inputImg = $('i').addClass('x-c-upload'),
-        cloneBtn = originInputBtn.cloneNode(false);
-    cloneBtn.style.display = 'none';
-    cloneBtn.setAttribute('name', 'file');
+        inputFile = new Dom('input').attr({
+            type: 'file'
+        }).addClass('x-c-input');
     inputMask.appendChild(inputImg);
-    inputMask.appendChild(cloneBtn);
+    inputMask.appendChild(inputFile);
     newDom.appendChild(inputMask);
-    originInputBtn.parentNode.replaceChild(newDom.getElement(), originInputBtn);
+    // originInputBtn.parentNode.replaceChild(newDom.getElement(), originInputBtn);
+    originInputBtn.appendChild(newDom.getElement());
 
     this.mask = mask;
     this.layerBox = layerBox.getElement();
@@ -334,7 +333,7 @@ function createDom() {
     this.cancelBtn = cancelBtn.btnMask.getElement();
     this.ctx = canvas.getElement().getContext('2d');
     this.inputMask = inputMask.getElement();
-    this.cloneInputBtn = cloneBtn;
+    this.inputFileButton = inputFile.getElement();
 
 }
 function initEvent(_this) {
@@ -362,16 +361,19 @@ function initEvent(_this) {
         _this.originLeft = parseInt(getComputedStyle(_selectBox, null).left);
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
     });
-    EventUtil.addHandler(window, 'mouseup', function () {
+    EventUtil.addHandler(window, 'mouseup', function (e) {
+        var target = EventUtil.getTarget(e);
         EventUtil.removeHandler(_selectBox, 'mousemove', handler);
-        var o = _this.options;
-        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
-            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+        if (target.className === 'x-c-sbox') {
+            var o = _this.options;
+            var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+                newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+            _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+        }
     });
 
-    var fileInput = document.getElementById(_this.options.el);
+    var fileInput = _this.inputFileButton;
 
     EventUtil.addHandler(fileInput, 'click', function (e) {
         if (_this.options.maxFileNumber > 1) {
@@ -384,10 +386,7 @@ function initEvent(_this) {
                         .attr({
                             id: 'x-c-error'
                         })
-                        .css({
-                            position: 'absolute',
-                            bottom: '-20px'
-                        })
+                        .addClass('x-c-error')
                         .text('最多只能上传' + _this.options.maxFileNumber + '张图片');
                     imgListDom.appendChild(errorRemind.getElement());
                 }
@@ -430,13 +429,19 @@ function initEvent(_this) {
             EventUtil.addHandler(img, 'load', function () {
                 _this.scaleY = img.naturalHeight/_this.showHeight;
                 _this.scaleX = img.naturalWidth/_this.showWidth;
+
+                var o = _this.options;
+                var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+                    newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+                _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
             });
         });
     }
 
     // 裁剪图片
     EventUtil.addHandler(_this.okBtn, 'click', function () {
-        var fragment = document.createDocumentFragment(), parentNode = document.getElementById(_this.options.el).parentNode.parentNode,
+        var fragment = document.createDocumentFragment(), parentNode = _this.inputFileButton.parentNode.parentNode,
             imgListDom = document.getElementById('r-c-imglist'), imgOuter;
         fileInput.value = '';
         _this.mask.css({
@@ -464,24 +469,26 @@ function initEvent(_this) {
                 top: _this.selectBox.style.top
             }];
         }
+
+        // TO_DO 此处的逻辑需要再精简一下，减少一些不必要的DOM重复渲染， 没必要每次都重复把fileList的元素全部渲染
+
         if (_this.fileList.length > 0) {
-            for (var i = 0; i < _this.fileList.length; i++) {
+            if (!_this.isRevise) {
+                var i = _this.fileList.length - 1;
                 var img = $('img'),
                     showImg = $('div'),
                     showImgMask = $('div'),
                     deleteImgIcon = $('i'),
                     zoomImgIcon = $('i'),
                     reviseImgIcon = $('i');
-                deleteImgIcon.addClass('x-c-delteicon x-c-icon').attr({title: '删除', 'data-index': i});
-                reviseImgIcon.addClass('x-c-reviseicon x-c-icon').attr({title: '修改', 'data-index': i});
-                zoomImgIcon.addClass('x-c-zoomicon x-c-icon').attr({title: '查看', 'data-index': i});
+                deleteImgIcon.addClass('x-c-delteicon x-c-icon').attr({title: '删除', 'data-index': i, 'data-type': 'delete'});
+                reviseImgIcon.addClass('x-c-reviseicon x-c-icon').attr({title: '修改', 'data-index': i, 'data-type': 'revise'});
+                zoomImgIcon.addClass('x-c-zoomicon x-c-icon').attr({title: '查看', 'data-index': i, 'data-type': 'preview'});
                 showImg.css({
                     width: _this.options.targetWidth + 'px',
                     height: _this.options.targetWidth + 'px',
                 }).addClass('x-c-simg');
-                showImgMask.css({
-                    // lineHeight: _this.options.targetHeight + 'px'
-                }).addClass('x-c-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
+                showImgMask.addClass('x-c-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
                 img.css({
                     width: '100%',
                     height: '100%',
@@ -490,60 +497,75 @@ function initEvent(_this) {
                 });
                 showImg.appendChild(showImgMask).appendChild(img);
                 fragment.appendChild(showImg.getElement());
-            }
-            if (imgListDom) {
-                imgListDom.innerHTML = '';
-                imgListDom.appendChild(fragment);
-
             } else {
+                document.getElementsByClassName('x-c-simg')[_this.reviseObj.index].src = _this.fileList[_this.reviseObj.index].newUrl;
+            }
+
+            if (imgListDom && !_this.isRevise) {
+                imgListDom.appendChild(fragment);
+            }
+            if (!imgListDom) {
                 imgOuter = $('div')
                     .addClass('r-c-imgs')
                     .attr({
                         id: 'r-c-imglist'
                     })
                     .css({
-                        display: 'inline-block',
                         height: _this.options.targetHeight + 'px'
                     }).appendChild(fragment);
                 parentNode.insertBefore(imgOuter.getElement(), _this.inputMask);
+
+                // 处理图片修改、删除、查看事件
                 EventUtil.addHandler(imgOuter.getElement(), 'click', function (e) {
                     var target = EventUtil.getTarget(e);
                     if (target.tagName.toUpperCase() === 'I') {
                         var index = target.getAttribute('data-index');
-                        _this.reviseObj = {
-                            index: index,
-                            originUrl: _this.fileList[index].originUrl,
-                            newUrl: _this.fileList[index].newUrl,
-                            left: _this.fileList[index].left,
-                            top: _this.fileList[index].top
-                        };
-                        _this.isRevise = true;
-
-                        inputChangeHandler(_this.reviseObj);
-
-                        var o = _this.options;
-                        var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
-                            newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-                        _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-                        _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+                        switch (target.getAttribute('data-type').toUpperCase()) {
+                            case 'REVISE':
+                                _this.reviseObj = {
+                                    index: index,
+                                    originUrl: _this.fileList[index].originUrl,
+                                    newUrl: _this.fileList[index].newUrl,
+                                    left: _this.fileList[index].left,
+                                    top: _this.fileList[index].top
+                                };
+                                _this.isRevise = true;
+                                inputChangeHandler(_this.reviseObj);
+                                break;
+                            case 'DELETE':
+                                _this.fileList.splice(index, 1);
+                                document.getElementById('r-c-imglist').removeChild(document.getElementsByClassName('x-c-simg')[index]);
+                                break;
+                            case 'PREVIEW':
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 })
             }
-            _this.isRevise = false;
-            _this.reviseIndex = 0;
         }
+        _this.isRevise = false;
+        _this.reviseObj = null;
+        _this.selectBox.style.left = '0';
+        _this.selectBox.style.top = '0';
+        _this.ctx.clearRect(0, 0, _this.options.targetWidth, _this.options.targetHeight);
+
     });
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
         fileInput.value = '';
         _this.isRevise = false;
         _this.reviseObj = null;
+        _this.selectBox.style.left = '0';
+        _this.selectBox.style.top = '0';
+        _this.ctx.clearRect(0, 0, _this.options.targetWidth, _this.options.targetHeight);
         _this.mask.css({
             display: 'none'
         });
     });
 
     EventUtil.addHandler(_this.inputMask, 'click', function () {
-        _this.cloneInputBtn.click();
+        _this.inputFileButton.click();
     })
 }
 function initParams() {
