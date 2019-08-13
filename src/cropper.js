@@ -360,6 +360,9 @@ function initEvent(_this) {
         if(top <= 0){
             top = 0;
         }
+        if (top >= _this.showHeight - _this.options.cropperWidth) {
+            top = _this.showHeight - _this.options.cropperWidth;
+        }
         _this.selectBox.style.left = left +'px';
         _this.selectBox.style.top = top +'px';
     }
@@ -378,7 +381,7 @@ function initEvent(_this) {
             var o = _this.options;
             var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                 newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-            _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
+            _this.ctx.clearRect(0,0, _this.options.targetWidth * o.zoomScale, _this.options.targetHeight * o.zoomScale);
             _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth * o.zoomScale, o.targetHeight * o.zoomScale);
         }
     });
@@ -570,7 +573,7 @@ function initEvent(_this) {
         _this.reviseObj = null;
         _this.selectBox.style.left = '0';
         _this.selectBox.style.top = '0';
-        _this.ctx.clearRect(0, 0, _this.options.targetWidth, _this.options.targetHeight);
+        _this.ctx.clearRect(0, 0, _this.options.targetWidth * _this.options.zoomScale, _this.options.targetHeight * _this.options.zoomScale);
         _this.mask.css({
             display: 'none'
         });
