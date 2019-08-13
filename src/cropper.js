@@ -268,10 +268,18 @@ function createDom() {
         canvas = $('canvas'),
         cutBtn = new ButtonDom('div', this.options.okText, this.options.btnWidth),
         cancelBtn = new ButtonDom('div', this.options.cancelText, this.options.btnWidth),
-        originInputBtn = document.getElementById(this.options.el);
+        originInputBtn = document.getElementById(this.options.el),
+        previewMask = new Dom('div'),
+        previewImg = new Dom('img');
 
-    cutBtn.btn.addClass('x-c-cutbtn', 'x-c-btn');
-    cancelBtn.btn.addClass('x-c-cbtn', 'x-c-btn');
+    previewImg.addClass('xc-preview-img').css({
+        height: this.options.targetHeight * this.options.zoomScale + 'px',
+        width: this.options.targetWidth * this.options.zoomScale + 'px'
+    });
+    previewMask.addClass('xc-preview-mask').appendChild(previewImg).hide();
+
+    cutBtn.btn.addClass('xc-cutbtn', 'xc-btn');
+    cancelBtn.btn.addClass('xc-cbtn', 'xc-btn');
 
     showImg.css({
         minWidth: this.options.layerWidth + 'px',
@@ -282,21 +290,21 @@ function createDom() {
         .attr({
             width: this.options.targetWidth,
             height: this.options.targetHeight,
-        }).addClass('x-c-canvas');
+        }).addClass('xc-canvas');
 
     contentBox.css({
         width: this.options.layerWidth + this.options.targetWidth + 'px',
-    }).addClass('x-c-cbox');
+    }).addClass('xc-cbox');
 
     selectBox.css({
         width: this.options.cropperWidth + 'px',
         height: this.options.cropperWidth + 'px',
-    }).addClass('x-c-sbox');
+    }).addClass('xc-sbox');
 
     layerBox.css({
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
-    }).addClass('x-c-layer');
+    }).addClass('xc-layer');
 
     mask.addClass('r-cropper-mask');
 
@@ -308,16 +316,17 @@ function createDom() {
     contentBox.appendChild(canvas);
     mask.appendChild(contentBox);
     document.body.appendChild(mask.getElement());
+    document.body.appendChild(previewMask.getElement());
 
     var newDom = $('div').addClass('outer-dom'),
         inputMask = $('div').css({
             width: this.options.targetWidth + 'px',
             height: this.options.targetHeight + 'px',
-        }).addClass('x-c-inputmask'),
-        inputImg = $('i').addClass('x-c-upload'),
+        }).addClass('xc-inputmask'),
+        inputImg = $('i').addClass('xc-upload'),
         inputFile = new Dom('input').attr({
             type: 'file'
-        }).addClass('x-c-input');
+        }).addClass('xc-input');
     inputMask.appendChild(inputImg);
     inputMask.appendChild(inputFile);
     newDom.appendChild(inputMask);
@@ -334,6 +343,8 @@ function createDom() {
     this.ctx = canvas.getElement().getContext('2d');
     this.inputMask = inputMask.getElement();
     this.inputFileButton = inputFile.getElement();
+    this.previewMask = previewMask;
+    this.previewImg = previewImg;
 
 }
 function initEvent(_this) {
@@ -364,7 +375,7 @@ function initEvent(_this) {
     EventUtil.addHandler(window, 'mouseup', function (e) {
         var target = EventUtil.getTarget(e);
         EventUtil.removeHandler(_selectBox, 'mousemove', handler);
-        if (target.className === 'x-c-sbox') {
+        if (target.className === 'xc-sbox') {
             var o = _this.options;
             var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                 newY = parseInt(getComputedStyle(_this.selectBox, null).top);
@@ -379,14 +390,14 @@ function initEvent(_this) {
         if (_this.options.maxFileNumber > 1) {
             if (_this.fileList.length >= _this.options.maxFileNumber) {
                 var imgListDom = document.getElementById('r-c-imglist');
-                if (document.getElementById('x-c-error')) {
-                    $('#x-c-error').show();
+                if (document.getElementById('xc-error')) {
+                    $('#xc-error').show();
                 } else {
                     var errorRemind = $('div')
                         .attr({
-                            id: 'x-c-error'
+                            id: 'xc-error'
                         })
-                        .addClass('x-c-error')
+                        .addClass('xc-error')
                         .text('最多只能上传' + _this.options.maxFileNumber + '张图片');
                     imgListDom.appendChild(errorRemind.getElement());
                 }
@@ -481,14 +492,14 @@ function initEvent(_this) {
                     deleteImgIcon = $('i'),
                     zoomImgIcon = $('i'),
                     reviseImgIcon = $('i');
-                deleteImgIcon.addClass('x-c-delteicon x-c-icon').attr({title: '删除', 'data-index': i, 'data-type': 'delete'});
-                reviseImgIcon.addClass('x-c-reviseicon x-c-icon').attr({title: '修改', 'data-index': i, 'data-type': 'revise'});
-                zoomImgIcon.addClass('x-c-zoomicon x-c-icon').attr({title: '查看', 'data-index': i, 'data-type': 'preview'});
+                deleteImgIcon.addClass('xc-delteicon xc-icon').attr({title: '删除', 'data-index': i, 'data-type': 'delete'});
+                reviseImgIcon.addClass('xc-reviseicon xc-icon').attr({title: '修改', 'data-index': i, 'data-type': 'revise'});
+                zoomImgIcon.addClass('xc-zoomicon xc-icon').attr({title: '查看', 'data-index': i, 'data-type': 'preview'});
                 showImg.css({
                     width: _this.options.targetWidth + 'px',
                     height: _this.options.targetWidth + 'px',
-                }).addClass('x-c-simg');
-                showImgMask.addClass('x-c-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
+                }).addClass('xc-simg');
+                showImgMask.addClass('xc-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
                 img.css({
                     width: '100%',
                     height: '100%',
@@ -498,7 +509,7 @@ function initEvent(_this) {
                 showImg.appendChild(showImgMask).appendChild(img);
                 fragment.appendChild(showImg.getElement());
             } else {
-                document.getElementsByClassName('x-c-simg')[_this.reviseObj.index].src = _this.fileList[_this.reviseObj.index].newUrl;
+                document.getElementsByClassName('xc-simg')[_this.reviseObj.index].src = _this.fileList[_this.reviseObj.index].newUrl;
             }
 
             if (imgListDom && !_this.isRevise) {
@@ -534,9 +545,11 @@ function initEvent(_this) {
                                 break;
                             case 'DELETE':
                                 _this.fileList.splice(index, 1);
-                                document.getElementById('r-c-imglist').removeChild(document.getElementsByClassName('x-c-simg')[index]);
+                                document.getElementById('r-c-imglist').removeChild(document.getElementsByClassName('xc-simg')[index]);
                                 break;
                             case 'PREVIEW':
+                                _this.previewIndex = index;
+                                _this.preview();
                                 break;
                             default:
                                 break;
@@ -581,10 +594,17 @@ function initParams() {
     this.currentImgUrl = '';
     this.isRevise = false;
     this.reviseObj = null;
+    this.previewIndex = 0;
 }
 function initMethods() {
     this.getFiles = function() {
         return this.fileList;
+    };
+    this.preview = function () {
+        this.previewMask.show();
+        this.previewImg.attr({
+            src: this.fileList[this.previewIndex].newUrl
+        });
     }
 }
 function Cropper(option) {
@@ -598,7 +618,8 @@ function Cropper(option) {
         el: option.el || 'crop-file-select',
         okText: option.okText || '确定',
         cancelText: option.cancelText || '取消',
-        maxFileNumber: option.maxFileNumber || 1
+        maxFileNumber: option.maxFileNumber || 1,
+        zoomScale: option.zoomScale || 3
     };
     this.initParams = initParams.call(this);
     this.createDom = createDom.call(this);
