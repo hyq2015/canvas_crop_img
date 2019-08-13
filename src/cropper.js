@@ -288,12 +288,12 @@ function createDom() {
 
     canvas
         .attr({
-            width: this.options.targetWidth,
-            height: this.options.targetHeight,
+            width: this.options.targetWidth * this.options.zoomScale,
+            height: this.options.targetHeight * this.options.zoomScale,
         }).addClass('xc-canvas');
 
     contentBox.css({
-        width: this.options.layerWidth + this.options.targetWidth + 'px',
+        width: this.options.layerWidth + this.options.targetWidth * this.options.zoomScale + 'px',
     }).addClass('xc-cbox');
 
     selectBox.css({
@@ -345,7 +345,6 @@ function createDom() {
     this.inputFileButton = inputFile.getElement();
     this.previewMask = previewMask;
     this.previewImg = previewImg;
-
 }
 function initEvent(_this) {
     var _selectBox = _this.selectBox;
@@ -380,7 +379,7 @@ function initEvent(_this) {
             var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                 newY = parseInt(getComputedStyle(_this.selectBox, null).top);
             _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth * o.zoomScale, o.targetHeight * o.zoomScale);
         }
     });
 
@@ -445,7 +444,7 @@ function initEvent(_this) {
                 var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                     newY = parseInt(getComputedStyle(_this.selectBox, null).top);
                 _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth, o.targetHeight);
+                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth * o.zoomScale, o.targetHeight * o.zoomScale);
             });
         });
     }
