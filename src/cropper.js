@@ -48,18 +48,18 @@ function $(idOrClassOrTagName) {
 }
 // 辅助函数, 将驼峰命名的样式名称转换成中横线
 function styleNameHelper(key) {
-    var _key = key.trim(), i;
-    var upperCaseWord = _key.match(/[A-Z]/g);
+    var _key = key.trim(), i, upperCaseWord = _key.match(/[A-Z]/g), len;
     if (upperCaseWord && upperCaseWord.length > 0) {
-        for(i = 0; i < upperCaseWord.length; i++) {
+        for(i = 0, len = upperCaseWord.length; i < len; i++) {
             _key.replace(/upperCaseWord[i]/g, '-' + upperCaseWord[i].toLowerCase())
         }
     }
     return _key;
 }
 Dom.prototype.hide = function(display) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
+    var i, len = this.ele.length;
+    if (len > 0) {
+        for (i = 0; i < len; i++) {
             this.ele[i].style.display = 'none';
         }
     } else {
@@ -68,8 +68,9 @@ Dom.prototype.hide = function(display) {
     return this;
 };
 Dom.prototype.show = function(display) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
+    var i, len = this.ele.length;
+    if (len > 0) {
+        for (i = 0; i < len; i++) {
             this.ele[i].style.display = display || 'block';
         }
     } else {
@@ -78,8 +79,9 @@ Dom.prototype.show = function(display) {
     return this;
 };
 Dom.prototype.css = function(obj) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
+    var i, len = this.ele.length;
+    if (len > 0) {
+        for (i = 0; i < len; i++) {
             for(var key in obj) {
                 this.ele[i].style[styleNameHelper(key)] = obj[key];
             }
@@ -92,8 +94,9 @@ Dom.prototype.css = function(obj) {
     return this;
 };
 Dom.prototype.attr = function(attributeObj) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
+    var i, len = this.ele.length;
+    if (len > 0) {
+        for (i = 0; i < len; i++) {
             for(var key in attributeObj) {
                 this.ele[i].setAttribute(key, attributeObj[key]);
             }
@@ -105,27 +108,33 @@ Dom.prototype.attr = function(attributeObj) {
     }
     return this;
 };
-Dom.prototype.appendChild = function (dom) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
-            if (dom instanceof Dom) {
-                this.ele[i].appendChild(dom.ele);
-            } else {
-                this.ele[i].appendChild(dom);
+Dom.prototype.appendChild = function () {
+
+    var i, len = this.ele.length, argLen = arguments.length, j, dom;
+    for (j = 0; j < argLen; j++) {
+        dom = arguments[j];
+        if (len > 0) {
+            for (i = 0; i < len; i++) {
+                if (dom instanceof Dom) {
+                    this.ele[i].appendChild(dom.ele);
+                } else {
+                    this.ele[i].appendChild(dom);
+                }
             }
-        }
-    } else {
-        if (dom instanceof Dom) {
-            this.ele.appendChild(dom.ele);
         } else {
-            this.ele.appendChild(dom);
+            if (dom instanceof Dom) {
+                this.ele.appendChild(dom.ele);
+            } else {
+                this.ele.appendChild(dom);
+            }
         }
     }
     return this;
 };
 Dom.prototype.text = function (txt) {
-    if (this.ele.length > 0) {
-        for (var i = 0; i < this.ele.length; i++) {
+    var i, len = this.ele.length;
+    if (len > 0) {
+        for (i = 0; i < len; i++) {
             this.ele[i].innerText = txt;
         }
     } else {
@@ -140,9 +149,8 @@ Dom.prototype.text = function (txt) {
  */
 Dom.prototype.addClass = function (classes) {
     var oldClass = this.ele.className.replace(/\s+/g, " ").split(" "), i, len = oldClass.length, j, lenJ = arguments.length,
-        newArr = [];
+        newArr = [], isExist = false;
     for (j = 0; j < lenJ; j++) {
-        var isExist = false;
         for (i = 0; i < len; i++) {
             if (oldClass[i].toLowerCase() === arguments[j].trim().toLowerCase()) {
                 isExist = true;
@@ -203,21 +211,18 @@ function ButtonDom(tagName, text, width) {
     var btnMask = $('div'),
         rippleCircle = $('div'),
         btn = $(tagName),
-        fragment = document.createDocumentFragment();
-
+        fragment = document.createDocumentFragment(),
+        _this = this;
 
     btnMask.addClass('x-btn-mask');
     rippleCircle.addClass('ripple-circle');
-    var _this = this;
+
     btn.css({
         width: width + 'px'
-    });
-    btn.text(text);
+    })
+    .text(text)
+    .appendChild(btnMask, rippleCircle);
 
-    btn.appendChild(btnMask);
-    btn.appendChild(rippleCircle);
-    // fragment.appendChild(this.getElement());
-    // return fragment;
     fragment.appendChild(btn.getElement());
 
     this.rippling = false;
@@ -281,8 +286,8 @@ function createDom() {
         zoomCircleLeftCenter = new Dom('div').addClass('xc-zoomnode xc-zm-lc').attr({'data-direction': 'lc'});
 
     previewImg.addClass('xc-preview-img').css({
-        height: this.options.targetHeight * this.options.zoomScale + 'px',
-        width: this.options.targetWidth * this.options.zoomScale + 'px'
+        height: this.options.cropperWidth + 'px',
+        width: this.options.cropperWidth + 'px'
     });
     previewMask.addClass('xc-preview-mask').appendChild(previewImg).hide();
 
@@ -296,56 +301,49 @@ function createDom() {
 
     canvas
         .attr({
-            width: this.options.targetWidth * this.options.zoomScale,
-            height: this.options.targetHeight * this.options.zoomScale,
+            width: this.options.cropperWidth,
+            height: this.options.cropperWidth,
         }).addClass('xc-canvas');
 
     contentBox.css({
-        width: this.options.layerWidth + this.options.targetWidth * this.options.zoomScale + 'px',
+        width: this.options.layerWidth + this.options.cropperWidth + 'px',
     }).addClass('xc-cbox');
 
     // 需要给裁剪框添加缩放的节点
     selectBox.css({
         width: this.options.cropperWidth + 'px',
         height: this.options.cropperWidth + 'px',
-    }).addClass('xc-sbox').appendChild(zoomCircleTopLeft).appendChild(zoomCircleTopCenter)
-        .appendChild(zoomCircleTopRight).appendChild(zoomCircleRightCenter).appendChild(zoomCircleRightBottom)
-        .appendChild(zoomCircleBottomCenter).appendChild(zoomCircleBottomLeft).appendChild(zoomCircleLeftCenter);
-
+    }).addClass('xc-sbox').appendChild(zoomCircleTopLeft, zoomCircleTopCenter, zoomCircleTopRight, zoomCircleRightCenter,
+        zoomCircleRightBottom, zoomCircleBottomCenter, zoomCircleBottomLeft, zoomCircleLeftCenter);
     layerBox.css({
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
     }).addClass('xc-layer');
     layerMask.addClass('xc-layermask');
-    mask.addClass('r-cropper-mask');
 
-    layerBox.appendChild(selectBox);
-    layerBox.appendChild(cutBtn);
-    layerBox.appendChild(cancelBtn);
-    layerBox.appendChild(showImg);
-    layerBox.appendChild(layerMask);
-    contentBox.appendChild(layerBox);
-    contentBox.appendChild(canvas);
-    mask.appendChild(contentBox);
+    layerBox.appendChild(selectBox, cutBtn, cancelBtn, showImg, layerMask);
+    contentBox.appendChild(layerBox, canvas);
+    mask.addClass('r-cropper-mask').appendChild(contentBox);
     document.body.appendChild(mask.getElement());
     document.body.appendChild(previewMask.getElement());
+
     var newDom = $('div').addClass('outer-dom'),
         inputMask = $('div').css({
-            width: this.options.targetWidth + 'px',
-            height: this.options.targetHeight + 'px',
+            width: this.options.imgFileDimension + 'px',
+            height: this.options.imgFileDimension + 'px',
         }).addClass('xc-inputmask'),
         inputImg = $('i').addClass('xc-upload'),
         inputFile = new Dom('input').attr({
             type: 'file'
         }).addClass('xc-input');
-    inputMask.appendChild(inputImg);
-    inputMask.appendChild(inputFile);
+
+    inputMask.appendChild(inputImg, inputFile);
     newDom.appendChild(inputMask);
-    // originInputBtn.parentNode.replaceChild(newDom.getElement(), originInputBtn);
     originInputBtn.appendChild(newDom.getElement());
 
     this.mask = mask;
     this.layerBox = layerBox.getElement();
+    this.contentBox = contentBox;
     this.selectBox = selectBox.getElement();
     this.showImg = showImg.getElement();
     this.canvas = canvas.getElement();
@@ -358,9 +356,10 @@ function createDom() {
     this.previewImg = previewImg;
 }
 function initEvent(_this) {
-    var _selectBox = _this.selectBox;
+    var _selectBox = _this.selectBox, fileInput = _this.inputFileButton;
+
     function handler(event) {
-        var cropperWidth = _this.selectBox.offsetWidth, cropperHeight = _this.selectBox.offsetHeight;
+        var cropperWidth = _selectBox.offsetWidth, cropperHeight = _selectBox.offsetHeight;
         var e = EventUtil.getEvent(event);
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
@@ -383,8 +382,8 @@ function initEvent(_this) {
 
         } else if (_this.moveEventType === 'zoom') {
             $('.xc-zoomnode').hide();
-            var heightIncrement = e.clientY - _this.originY;
-            var dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
+            var heightIncrement = e.clientY - _this.originY,
+            dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
             _this.moveTarget.style.display = 'block';
             switch(_this.zoomDirection) {
                 case 'rc':
@@ -457,15 +456,20 @@ function initEvent(_this) {
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
             }
-
+            _this.contentBox.css({
+                width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
+            })
         }
 
     }
+
     EventUtil.addHandler(_selectBox, 'mousedown', function (ev) {
+        var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev);
+
         EventUtil.stopPropagation(ev);
         EventUtil.preventDefault(ev);
         EventUtil.addHandler(window, 'mousemove', handler);
-        var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev);
+
         if (target.className.indexOf('xc-zoomnode') > -1) {
             // 裁剪框缩放
             _this.moveEventType = 'zoom';
@@ -483,19 +487,19 @@ function initEvent(_this) {
         _this.originLeft = parseInt(getComputedStyle(_selectBox, null).left);
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
     });
+
     EventUtil.addHandler(window, 'mouseup', function (e) {
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
         // 有可能鼠标会移动到裁剪框外面，需要处理exception
         EventUtil.removeHandler(window, 'mousemove', handler);
         if (_this.isCropping) {
-            var o = _this.options;
-            var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
-                newY = parseInt(getComputedStyle(_this.selectBox, null).top),
-                selectBoxWidth = _this.selectBox.offsetWidth,
-                selectBoxHeight = _this.selectBox.offsetHeight,
-                canvasWidth = selectBoxWidth * o.zoomScale,
-                canvasHeight = selectBoxHeight * o.zoomScale;
+            var newX = parseInt(getComputedStyle(_selectBox, null).left),
+                newY = parseInt(getComputedStyle(_selectBox, null).top),
+                selectBoxWidth = _selectBox.offsetWidth,
+                selectBoxHeight = _selectBox.offsetHeight,
+                canvasWidth = selectBoxWidth,
+                canvasHeight = selectBoxHeight;
             _this.canvas.setAttribute('width', canvasWidth.toString());
             _this.canvas.setAttribute('height', canvasHeight.toString());
             _this.ctx.clearRect(0,0, canvasWidth, canvasHeight);
@@ -504,8 +508,6 @@ function initEvent(_this) {
             _this.moveTarget = null;
         }
     });
-
-    var fileInput = _this.inputFileButton;
 
     EventUtil.addHandler(fileInput, 'click', function (e) {
         if (_this.options.maxFileNumber > 1) {
@@ -527,6 +529,7 @@ function initEvent(_this) {
         }
 
     });
+
     EventUtil.addHandler(fileInput, 'input', function () {
         inputChangeHandler();
     });
@@ -541,8 +544,8 @@ function initEvent(_this) {
             EventUtil.addHandler(reader, 'load', readerHandler);
         } else {
             readerHandler(isRevise);
-            _this.selectBox.style.left = isRevise.left;
-            _this.selectBox.style.top = isRevise.top;
+            _selectBox.style.left = isRevise.left;
+            _selectBox.style.top = isRevise.top;
         }
 
         _this.mask.css({
@@ -560,27 +563,22 @@ function initEvent(_this) {
             _this.showHeight =  _this.showImg.offsetHeight;
             img.src = src.originUrl || src;
             EventUtil.addHandler(img, 'load', function () {
-                _this.scaleY = img.naturalHeight/_this.showHeight;
-                _this.scaleX = img.naturalWidth/_this.showWidth;
+                _this.scaleY = img.naturalHeight / _this.showHeight;
+                _this.scaleX = img.naturalWidth / _this.showWidth;
 
-                var o = _this.options;
-                var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+                var o = _this.options, newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                     newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-                _this.ctx.clearRect(0,0, _this.options.targetWidth, _this.options.targetHeight);
-                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.targetWidth * o.zoomScale, o.targetHeight * o.zoomScale);
+                _this.ctx.clearRect(0,0, o.cropperWidth, o.cropperWidth);
+                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.cropperWidth, o.cropperWidth);
             });
         });
     }
 
     // 裁剪图片
     EventUtil.addHandler(_this.okBtn, 'click', function () {
-        var fragment = document.createDocumentFragment(), parentNode = _this.inputFileButton.parentNode.parentNode,
+        var fragment = document.createDocumentFragment(), parentNode = fileInput.parentNode.parentNode,
             imgListDom = document.getElementById('r-c-imglist'), imgOuter,
-            canWidth = _this.selectBox.offsetWidth, canHeight = _this.selectBox.offsetHeight;
-        fileInput.value = '';
-        _this.mask.css({
-            display: 'none'
-        });
+            canWidth = _selectBox.offsetWidth, canHeight = _selectBox.offsetHeight;
         // maxFileNumber
         if (_this.options.maxFileNumber > 1) {
             // currentImgUrl
@@ -610,23 +608,23 @@ function initEvent(_this) {
             }];
         }
 
-        // TO_DO 此处的逻辑需要再精简一下，减少一些不必要的DOM重复渲染， 没必要每次都重复把fileList的元素全部渲染
 
         if (_this.fileList.length > 0) {
             if (!_this.isRevise) {
-                var i = _this.fileList.length - 1;
-                var img = $('img'),
+                var i = _this.fileList.length - 1,
+                    img = $('img'),
                     showImg = $('div'),
                     showImgMask = $('div'),
                     deleteImgIcon = $('i'),
                     zoomImgIcon = $('i'),
                     reviseImgIcon = $('i');
+
                 deleteImgIcon.addClass('xc-delteicon xc-icon').attr({title: '删除', 'data-index': i, 'data-type': 'delete'});
                 reviseImgIcon.addClass('xc-reviseicon xc-icon').attr({title: '修改', 'data-index': i, 'data-type': 'revise'});
                 zoomImgIcon.addClass('xc-zoomicon xc-icon').attr({title: '查看', 'data-index': i, 'data-type': 'preview'});
                 showImg.css({
-                    width: _this.options.targetWidth + 'px',
-                    height: _this.options.targetWidth + 'px',
+                    width: _this.options.imgFileDimension + 'px',
+                    height: _this.options.imgFileDimension + 'px',
                 }).addClass('xc-simg');
                 showImgMask.addClass('xc-imgmask').appendChild(zoomImgIcon).appendChild(reviseImgIcon).appendChild(deleteImgIcon);
                 img.css({
@@ -651,7 +649,7 @@ function initEvent(_this) {
                         id: 'r-c-imglist'
                     })
                     .css({
-                        height: _this.options.targetHeight + 'px'
+                        height: _this.options.imgFileDimension + 'px'
                     }).appendChild(fragment);
                 parentNode.insertBefore(imgOuter.getElement(), _this.inputMask);
 
@@ -687,25 +685,11 @@ function initEvent(_this) {
                 })
             }
         }
-        _this.isRevise = false;
-        _this.reviseObj = null;
-        _this.selectBox.style.left = '0';
-        _this.selectBox.style.top = '0';
-        _this.ctx.clearRect(0, 0, _this.options.targetWidth, _this.options.targetHeight);
-        _this.isCropping = false;
+        _this.resetState();
 
     });
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
-        fileInput.value = '';
-        _this.isRevise = false;
-        _this.reviseObj = null;
-        _this.selectBox.style.left = '0';
-        _this.selectBox.style.top = '0';
-        _this.ctx.clearRect(0, 0, _this.options.targetWidth * _this.options.zoomScale, _this.options.targetHeight * _this.options.zoomScale);
-        _this.mask.css({
-            display: 'none'
-        });
-        _this.isCropping = false;
+        _this.resetState();
     });
 
     EventUtil.addHandler(_this.inputMask, 'click', function () {
@@ -752,21 +736,35 @@ function initMethods() {
             height: this.fileList[this.previewIndex].height + 'px',
             width: this.fileList[this.previewIndex].width + 'px'
         })
+    };
+    this.resetState = function () {
+        this.isRevise = false;
+        this.reviseObj = null;
+        this.selectBox.style.left = '0';
+        this.selectBox.style.top = '0';
+        this.selectBox.style.width = this.options.cropperWidth + 'px';
+        this.selectBox.style.height = this.options.cropperWidth + 'px';
+        this.canvas.width = this.options.cropperWidth;
+        this.canvas.height = this.options.cropperWidth;
+        this.ctx.clearRect(0, 0, this.options.cropperWidth, this.options.cropperWidth);
+        this.isCropping = false;
+        this.inputFileButton.value = '';
+        this.mask.css({
+            display: 'none'
+        });
     }
 }
 function Cropper(option) {
     this.options = {
-        cropperWidth: option.targetWidth || 150, // 裁剪框宽高(当前版本只支持正方形裁剪)
+        cropperWidth: option.cropperWidth || 150, 
         layerWidth: option.layerWidth || 400,
         layerHeight: 600,
-        targetWidth: option.targetWidth || 150,
-        targetHeight: option.targetHeight || 150,
         btnWidth: option.btnWidth || 200,
         el: option.el || 'crop-file-select',
         okText: option.okText || '确定',
         cancelText: option.cancelText || '取消',
         maxFileNumber: option.maxFileNumber || 1,
-        zoomScale: option.zoomScale || 3
+        imgFileDimension: option.imgFileDimension || 80
     };
     this.initParams = initParams.call(this);
     this.createDom = createDom.call(this);

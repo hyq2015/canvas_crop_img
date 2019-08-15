@@ -153,10 +153,12 @@
 }
 .xc-inputmask{
   text-align: center;
-  outline: 1px solid #f2f2f2;
+  border: 1px solid rgba(51,51,51,0.2);
   position: relative;
   cursor: pointer;
   display: inline-block;
+  border-radius: 4px;
+  color: rgba(51,51,51,0.6);
 }
 .xc-upload{
   font-family: x-icon-font;
