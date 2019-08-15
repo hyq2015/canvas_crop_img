@@ -27,6 +27,7 @@
     left: 0;
     cursor: pointer;
     outline: 2px solid #6ccfff;
+    z-index: 1001;
   }
   .xc-cbox{
     margin: 20px auto 0;
@@ -82,6 +83,17 @@
     background-color: #ff4585;
     border-radius: 100%;
     opacity: 0;
+  }
+  .xc-showimg{
+    user-select: none;
+  }
+  .xc-layermask{
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 36px;
+    width: 100%;
+    z-index: 900;
   }
 }
 .r-c-imgs{

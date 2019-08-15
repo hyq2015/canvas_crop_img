@@ -226,12 +226,10 @@ function ButtonDom(tagName, text, width) {
     this.btnMask = btnMask;
     EventUtil.addHandler(btnMask.getElement(), 'click', rippleHandler);
     function rippleHandler(ev) {
-        console.log('按钮点击');
         if (_this.rippling) {
             return;
         }
         _this.rippling = true;
-        console.log();
         var e = EventUtil.getEvent(ev),
             rightMargin = Math.max(Math.abs(_this.btn.getElement().offsetWidth - e.offsetX), e.offsetX),
             topMargin = Math.max(Math.abs(_this.btn.getElement().offsetHeight - e.offsetY), e.offsetY),
@@ -272,6 +270,7 @@ function createDom() {
         originInputBtn = document.getElementById(this.options.el),
         previewMask = new Dom('div'),
         previewImg = new Dom('img'),
+        layerMask = new Dom('div'),
         zoomCircleTopLeft = new Dom('div').addClass('xc-zoomnode xc-zm-tl').attr({'data-direction': 'tl'}),
         zoomCircleTopCenter = new Dom('div').addClass('xc-zoomnode xc-zm-tc').attr({'data-direction': 'tc'}),
         zoomCircleTopRight = new Dom('div').addClass('xc-zoomnode xc-zm-tr').attr({'data-direction': 'tr'}),
@@ -293,7 +292,7 @@ function createDom() {
     showImg.css({
         minWidth: this.options.layerWidth + 'px',
         maxWidth: this.options.layerWidth + 'px'
-    });
+    }).addClass('xc-showimg');
 
     canvas
         .attr({
@@ -317,19 +316,19 @@ function createDom() {
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
     }).addClass('xc-layer');
-
+    layerMask.addClass('xc-layermask');
     mask.addClass('r-cropper-mask');
 
     layerBox.appendChild(selectBox);
     layerBox.appendChild(cutBtn);
     layerBox.appendChild(cancelBtn);
     layerBox.appendChild(showImg);
+    layerBox.appendChild(layerMask);
     contentBox.appendChild(layerBox);
     contentBox.appendChild(canvas);
     mask.appendChild(contentBox);
     document.body.appendChild(mask.getElement());
     document.body.appendChild(previewMask.getElement());
-
     var newDom = $('div').addClass('outer-dom'),
         inputMask = $('div').css({
             width: this.options.targetWidth + 'px',
@@ -363,15 +362,17 @@ function initEvent(_this) {
     function handler(event) {
         var cropperWidth = _this.selectBox.offsetWidth, cropperHeight = _this.selectBox.offsetHeight;
         var e = EventUtil.getEvent(event);
+        EventUtil.stopPropagation(e);
+        EventUtil.preventDefault(e);
         if (_this.moveEventType === 'move') {
             var left = _this.originLeft + e.clientX-_this.originX, top = _this.originTop + e.clientY-_this.originY;
-            if(left <= 0){
+            if(left <= 0) {
                 left = 0;
             }
-            if(left >= _this.options.layerWidth - cropperWidth){
+            if(left >= _this.options.layerWidth - cropperWidth) {
                 left = _this.options.layerWidth - cropperWidth;
             }
-            if(top <= 0){
+            if(top <= 0) {
                 top = 0;
             }
             if (top >= _this.showHeight - cropperHeight) {
@@ -381,39 +382,74 @@ function initEvent(_this) {
             _this.selectBox.style.top = top +'px';
 
         } else if (_this.moveEventType === 'zoom') {
-
+            $('.xc-zoomnode').hide();
             var widthIncrement = e.clientX - _this.originX;
             var heightIncrement = e.clientY - _this.originY;
+            var dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
+            _this.moveTarget.style.display = 'block';
             switch(_this.zoomDirection) {
                 case 'rc':
-                    _selectBox.style.width = _this.currentCropperWidth + widthIncrement + 'px';
+                    if (_this.showWidth >= _this.currentCropperWidth + widthIncrement + parseInt(getComputedStyle(_this.selectBox, null).left)) {
+                        _selectBox.style.width = _this.currentCropperWidth + widthIncrement + 'px';
+                    }
                     break;
                 case 'lc':
-                    _selectBox.style.width = _this.currentCropperWidth - widthIncrement + 'px';
-                    _selectBox.style.left = _this.originLeft + widthIncrement + 'px';
+                    if (_this.originLeft + widthIncrement >= 0) {
+                        _selectBox.style.width = _this.currentCropperWidth - widthIncrement + 'px';
+                        _selectBox.style.left = _this.originLeft + widthIncrement + 'px';
+                    }
                     break;
                 case 'tc':
-                    _selectBox.style.height = _this.currentCropperHeight - heightIncrement + 'px';
-                    _selectBox.style.top = _this.originTop + heightIncrement + 'px';
+                    if (_this.originTop + heightIncrement >= 0) {
+                        _selectBox.style.height = _this.currentCropperHeight - heightIncrement + 'px';
+                        _selectBox.style.top = _this.originTop + heightIncrement + 'px';
+                    }
                     break;
                 case 'bc':
-                    _selectBox.style.height = _this.currentCropperHeight + heightIncrement + 'px';
+                    if (_this.showHeight >= (_this.currentCropperHeight + heightIncrement + parseInt(getComputedStyle(_this.selectBox, null).top))) {
+                        _selectBox.style.height = _this.currentCropperHeight + heightIncrement + 'px';
+                    }
+                    break;
+                case 'rb':
+                    _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
+                    _selectBox.style.height = _this.currentCropperHeight + dy + 'px';
+                    break;
+                case 'tr':
+                    _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
+                    _selectBox.style.height = _this.currentCropperHeight + dy + 'px';
+                    _selectBox.style.top = _this.originTop - dy + 'px';
+                    break;
+                case 'tl':
+                    _selectBox.style.width = _this.currentCropperWidth - dx + 'px';
+                    _selectBox.style.height = _this.currentCropperHeight - dy + 'px';
+                    _selectBox.style.top = _this.originTop + dy + 'px';
+                    _selectBox.style.left = _this.originLeft + dx + 'px';
+                    break;
+                case 'bl':
+                    _selectBox.style.width = _this.currentCropperWidth - dx + 'px';
+                    _selectBox.style.height = _this.currentCropperHeight - dy + 'px';
+                    _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
             }
+
         }
 
     }
     EventUtil.addHandler(_selectBox, 'mousedown', function (ev) {
+        EventUtil.stopPropagation(ev);
+        EventUtil.preventDefault(ev);
         EventUtil.addHandler(window, 'mousemove', handler);
         var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev);
         if (target.className.indexOf('xc-zoomnode') > -1) {
             // 裁剪框缩放
             _this.moveEventType = 'zoom';
+            _this.moveTarget = EventUtil.getTarget(ev);
             _this.currentCropperWidth = _this.selectBox.offsetWidth;
             _this.currentCropperHeight = _this.selectBox.offsetHeight;
             _this.zoomDirection = target.getAttribute('data-direction')
         } else {
             // 裁剪框移动
+
             _this.moveEventType = 'move';
         }
         _this.originX = e.clientX;
@@ -422,9 +458,11 @@ function initEvent(_this) {
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
     });
     EventUtil.addHandler(window, 'mouseup', function (e) {
-        var target = EventUtil.getTarget(e);
+        EventUtil.stopPropagation(e);
+        EventUtil.preventDefault(e);
+        // 有可能鼠标会移动到裁剪框外面，需要处理exception
         EventUtil.removeHandler(window, 'mousemove', handler);
-        if (target.className === 'xc-sbox' || target.className.indexOf('xc-zoomnode') > -1) {
+        if (_this.isCropping) {
             var o = _this.options;
             var newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                 newY = parseInt(getComputedStyle(_this.selectBox, null).top),
@@ -436,6 +474,8 @@ function initEvent(_this) {
             _this.canvas.setAttribute('height', canvasHeight.toString());
             _this.ctx.clearRect(0,0, canvasWidth, canvasHeight);
             _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, selectBoxWidth * _this.scaleX, selectBoxHeight * _this.scaleY, 0, 0, canvasWidth, canvasHeight);
+            $('.xc-zoomnode').show();
+            _this.moveTarget = null;
         }
     });
 
@@ -486,6 +526,7 @@ function initEvent(_this) {
 
     function readerHandler(e) {
         var src = e.target ? e.target.result : e, img = new Image();
+        _this.isCropping = true;
         _this.showImg.setAttribute('src', src.originUrl || src);
         _this.currentImgUrl = src.originUrl || src;
         EventUtil.addHandler(_this.showImg, 'load', function() {
@@ -625,6 +666,7 @@ function initEvent(_this) {
         _this.selectBox.style.left = '0';
         _this.selectBox.style.top = '0';
         _this.ctx.clearRect(0, 0, _this.options.targetWidth, _this.options.targetHeight);
+        _this.isCropping = false;
 
     });
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
@@ -637,6 +679,7 @@ function initEvent(_this) {
         _this.mask.css({
             display: 'none'
         });
+        _this.isCropping = false;
     });
 
     EventUtil.addHandler(_this.inputMask, 'click', function () {
@@ -666,6 +709,8 @@ function initParams() {
     this.previewIndex = 0;
     this.moveEventType = 'move';
     this.zoomDirection = '';
+    this.isCropping = false;
+    this.moveTarget = null;
 }
 function initMethods() {
     this.getFiles = function() {
