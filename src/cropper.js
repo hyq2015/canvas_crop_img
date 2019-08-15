@@ -383,49 +383,75 @@ function initEvent(_this) {
 
         } else if (_this.moveEventType === 'zoom') {
             $('.xc-zoomnode').hide();
-            var widthIncrement = e.clientX - _this.originX;
             var heightIncrement = e.clientY - _this.originY;
             var dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
             _this.moveTarget.style.display = 'block';
             switch(_this.zoomDirection) {
                 case 'rc':
-                    if (_this.showWidth >= _this.currentCropperWidth + widthIncrement + parseInt(getComputedStyle(_this.selectBox, null).left)) {
-                        _selectBox.style.width = _this.currentCropperWidth + widthIncrement + 'px';
+                    if ((_this.showWidth >= _this.currentCropperWidth + dx + parseInt(getComputedStyle(_this.selectBox, null).left)) &&
+                        (_this.minCropperWidth <= _this.currentCropperWidth + dx)
+                    ) {
+                        _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
                     }
                     break;
                 case 'lc':
-                    if (_this.originLeft + widthIncrement >= 0) {
-                        _selectBox.style.width = _this.currentCropperWidth - widthIncrement + 'px';
-                        _selectBox.style.left = _this.originLeft + widthIncrement + 'px';
+                    if ((_this.originLeft + dx >= 0) && (_this.minCropperWidth <= _this.currentCropperWidth - dx)) {
+                        _selectBox.style.width = _this.currentCropperWidth - dx + 'px';
+                        _selectBox.style.left = _this.originLeft + dx + 'px';
                     }
                     break;
                 case 'tc':
-                    if (_this.originTop + heightIncrement >= 0) {
+                    if ((_this.originTop + heightIncrement >= 0) && (_this.minCropperHeight <= _this.currentCropperHeight - heightIncrement)) {
                         _selectBox.style.height = _this.currentCropperHeight - heightIncrement + 'px';
                         _selectBox.style.top = _this.originTop + heightIncrement + 'px';
                     }
                     break;
                 case 'bc':
-                    if (_this.showHeight >= (_this.currentCropperHeight + heightIncrement + parseInt(getComputedStyle(_this.selectBox, null).top))) {
+                    if (_this.showHeight >= (_this.currentCropperHeight + heightIncrement + parseInt(getComputedStyle(_this.selectBox, null).top)) &&
+                        (_this.minCropperHeight <= _this.currentCropperHeight + heightIncrement)) {
                         _selectBox.style.height = _this.currentCropperHeight + heightIncrement + 'px';
                     }
                     break;
                 case 'rb':
+                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.showWidth) ||
+                        _this.currentCropperHeight + dy + _this.originTop > _this.showHeight ||
+                        _this.currentCropperWidth + dx < _this.minCropperWidth ||
+                        _this.currentCropperHeight + dy < _this.minCropperHeight) {
+                        return;
+                    }
                     _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
                     _selectBox.style.height = _this.currentCropperHeight + dy + 'px';
                     break;
                 case 'tr':
+                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.showWidth) ||
+                        _this.originTop - dy < 0 ||
+                        _this.currentCropperWidth + dx < _this.minCropperWidth ||
+                        _this.currentCropperHeight + dy < _this.minCropperHeight) {
+                        return;
+                    }
                     _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
                     _selectBox.style.height = _this.currentCropperHeight + dy + 'px';
                     _selectBox.style.top = _this.originTop - dy + 'px';
                     break;
                 case 'tl':
+                    if ((_this.originTop + dy < 0) ||
+                        (_this.originLeft + dx < 0) ||
+                        _this.currentCropperWidth - dx < _this.minCropperWidth ||
+                        _this.currentCropperHeight - dy < _this.minCropperHeight) {
+                        return;
+                    }
                     _selectBox.style.width = _this.currentCropperWidth - dx + 'px';
                     _selectBox.style.height = _this.currentCropperHeight - dy + 'px';
                     _selectBox.style.top = _this.originTop + dy + 'px';
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
                 case 'bl':
+                    if ((_this.currentCropperHeight - dy + _this.originTop > _this.showHeight) ||
+                        (_this.originLeft + dx < 0) ||
+                        _this.currentCropperWidth - dx < _this.minCropperWidth ||
+                        _this.currentCropperHeight - dy < _this.minCropperHeight) {
+                        return;
+                    }
                     _selectBox.style.width = _this.currentCropperWidth - dx + 'px';
                     _selectBox.style.height = _this.currentCropperHeight - dy + 'px';
                     _selectBox.style.left = _this.originLeft + dx + 'px';
@@ -711,6 +737,8 @@ function initParams() {
     this.zoomDirection = '';
     this.isCropping = false;
     this.moveTarget = null;
+    this.minCropperWidth = 10;
+    this.minCropperHeight = 10;
 }
 function initMethods() {
     this.getFiles = function() {
