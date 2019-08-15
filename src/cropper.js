@@ -2,6 +2,8 @@
  *  由于canvas只支持IE9及其以上版本浏览器，所以本控件涉及到的js语法也不考虑兼容IE9以下浏览器
  */
 
+
+// TODO 存在大量事件重复监听，需要处理
 var EventUtil = {
     addHandler: function(element, type, handler) { // 添加事件处理器
         if (element.addEventListener) {
@@ -354,6 +356,7 @@ function createDom() {
     this.inputFileButton = inputFile.getElement();
     this.previewMask = previewMask;
     this.previewImg = previewImg;
+    this.originImg = new Image();
 }
 function initEvent(_this) {
     var _selectBox = _this.selectBox, fileInput = _this.inputFileButton;
@@ -381,10 +384,12 @@ function initEvent(_this) {
             _this.selectBox.style.top = top +'px';
 
         } else if (_this.moveEventType === 'zoom') {
+            console.log("zoom===========");
             $('.xc-zoomnode').hide();
             var heightIncrement = e.clientY - _this.originY,
             dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
             _this.moveTarget.style.display = 'block';
+
             switch(_this.zoomDirection) {
                 case 'rc':
                     if ((_this.showWidth >= _this.currentCropperWidth + dx + parseInt(getComputedStyle(_this.selectBox, null).left)) &&
@@ -456,12 +461,72 @@ function initEvent(_this) {
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
             }
-            _this.contentBox.css({
-                width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
-            })
         }
 
     }
+    function inputChangeHandler(isRevise) {
+        var file=fileInput.files[0], reader=new FileReader();
+        if (!isRevise) {
+            if (!file) {
+                return;
+            }
+            reader.readAsDataURL(file);
+            EventUtil.addHandler(reader, 'load', readerHandler);
+        } else {
+            readerHandler(isRevise);
+            console.log(isRevise);
+            _selectBox.style.left = isRevise.left;
+            _selectBox.style.top = isRevise.top;
+            _selectBox.style.height = isRevise.height + 'px';
+            _selectBox.style.width = isRevise.width + 'px';
+        }
+
+        _this.mask.css({
+            display: 'block'
+        });
+    }
+    function readerHandler(e) {
+        var src = e.target ? e.target.result : e;
+        _this.isCropping = true;
+        _this.showImg.setAttribute('src', src.originUrl || src);
+        _this.currentImgUrl = src.originUrl || src;
+        if (!_this.isRevise) {
+            _this.originImg.src = src.originUrl || src;
+        } else {
+            _this.showWidth = _this.reviseObj.showWidth;
+            _this.showHeight = _this.reviseObj.showHeight;
+            _this.canvas.width = _this.reviseObj.width;
+            _this.canvas.height = _this.reviseObj.height;
+            _this.contentBox.css({
+                width: _this.options.layerWidth + _this.reviseObj.width + 'px'
+            });
+            _this.ctx.drawImage(_this.showImg, parseInt(_this.reviseObj.left) * _this.scaleX, parseInt(_this.reviseObj.top) * _this.scaleY, _this.reviseObj.width * _this.scaleX, _this.reviseObj.height * _this.scaleY, 0, 0, _this.reviseObj.width, _this.reviseObj.height);
+        }
+    }
+    EventUtil.addHandler(_this.showImg, 'load', function() {
+        console.log("show img load==============");
+        if (_this.isRevise) {
+            return;
+        }
+        _this.showWidth =  _this.showImg.offsetWidth;
+        _this.showHeight =  _this.showImg.offsetHeight;
+        EventUtil.addHandler(_this.originImg, 'load', function () {
+            console.log("origin img load==============");
+            _this.scaleY = _this.originImg.naturalHeight / _this.showHeight;
+            _this.scaleX = _this.originImg.naturalWidth / _this.showWidth;
+            _this.naturalImgHeight = _this.originImg.naturalHeight;
+            _this.naturalImgWidth = _this.originImg.naturalWidth;
+
+            var o = _this.options, newX = parseInt(getComputedStyle(_this.selectBox, null).left),
+                newY = parseInt(getComputedStyle(_this.selectBox, null).top);
+
+            _this.ctx.clearRect(0,0, o.cropperWidth, o.cropperWidth);
+            _this.canvas.width = o.cropperWidth;
+            _this.canvas.height = o.cropperWidth;
+
+            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.cropperWidth, o.cropperWidth);
+        });
+    });
 
     EventUtil.addHandler(_selectBox, 'mousedown', function (ev) {
         var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev);
@@ -487,7 +552,6 @@ function initEvent(_this) {
         _this.originLeft = parseInt(getComputedStyle(_selectBox, null).left);
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
     });
-
     EventUtil.addHandler(window, 'mouseup', function (e) {
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
@@ -506,9 +570,11 @@ function initEvent(_this) {
             _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, selectBoxWidth * _this.scaleX, selectBoxHeight * _this.scaleY, 0, 0, canvasWidth, canvasHeight);
             $('.xc-zoomnode').show();
             _this.moveTarget = null;
+            _this.contentBox.css({
+                width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
+            })
         }
     });
-
     EventUtil.addHandler(fileInput, 'click', function (e) {
         if (_this.options.maxFileNumber > 1) {
             if (_this.fileList.length >= _this.options.maxFileNumber) {
@@ -529,50 +595,9 @@ function initEvent(_this) {
         }
 
     });
-
     EventUtil.addHandler(fileInput, 'input', function () {
         inputChangeHandler();
     });
-
-    function inputChangeHandler(isRevise) {
-        var file=fileInput.files[0], reader=new FileReader();
-        if (!isRevise) {
-            if (!file) {
-                return;
-            }
-            reader.readAsDataURL(file);
-            EventUtil.addHandler(reader, 'load', readerHandler);
-        } else {
-            readerHandler(isRevise);
-            _selectBox.style.left = isRevise.left;
-            _selectBox.style.top = isRevise.top;
-        }
-
-        _this.mask.css({
-            display: 'block'
-        });
-    }
-
-    function readerHandler(e) {
-        var src = e.target ? e.target.result : e, img = new Image();
-        _this.isCropping = true;
-        _this.showImg.setAttribute('src', src.originUrl || src);
-        _this.currentImgUrl = src.originUrl || src;
-        EventUtil.addHandler(_this.showImg, 'load', function() {
-            _this.showWidth =  _this.showImg.offsetWidth;
-            _this.showHeight =  _this.showImg.offsetHeight;
-            img.src = src.originUrl || src;
-            EventUtil.addHandler(img, 'load', function () {
-                _this.scaleY = img.naturalHeight / _this.showHeight;
-                _this.scaleX = img.naturalWidth / _this.showWidth;
-
-                var o = _this.options, newX = parseInt(getComputedStyle(_this.selectBox, null).left),
-                    newY = parseInt(getComputedStyle(_this.selectBox, null).top);
-                _this.ctx.clearRect(0,0, o.cropperWidth, o.cropperWidth);
-                _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.cropperWidth, o.cropperWidth);
-            });
-        });
-    }
 
     // 裁剪图片
     EventUtil.addHandler(_this.okBtn, 'click', function () {
@@ -586,6 +611,8 @@ function initEvent(_this) {
                 _this.fileList[_this.reviseObj.index].newUrl = _this.canvas.toDataURL('base64');
                 _this.fileList[_this.reviseObj.index].width = canWidth;
                 _this.fileList[_this.reviseObj.index].height = canHeight;
+                _this.fileList[_this.reviseObj.index].left = _this.selectBox.style.left;
+                _this.fileList[_this.reviseObj.index].top = _this.selectBox.style.top;
             } else {
                 _this.fileList.push({
                     originUrl: _this.currentImgUrl,
@@ -593,7 +620,13 @@ function initEvent(_this) {
                     left: _this.selectBox.style.left,
                     top: _this.selectBox.style.top,
                     width: canWidth,
-                    height: canHeight
+                    height: canHeight,
+                    naturalImgHeight: _this.naturalImgHeight,
+                    naturalImgWidth: _this.naturalImgWidth,
+                    scaleY: _this.scaleY,
+                    scaleX: _this.scaleX,
+                    showWidth: _this.showWidth,
+                    showHeight: _this.showHeight
                 });
             }
 
@@ -604,7 +637,13 @@ function initEvent(_this) {
                 left: _this.selectBox.style.left,
                 top: _this.selectBox.style.top,
                 width: canWidth,
-                height: canHeight
+                height: canHeight,
+                naturalImgHeight: _this.naturalImgHeight,
+                naturalImgWidth: _this.naturalImgWidth,
+                scaleY: _this.scaleY,
+                scaleX: _this.scaleX,
+                showWidth: _this.showWidth,
+                showHeight: _this.showHeight
             }];
         }
 
@@ -665,7 +704,13 @@ function initEvent(_this) {
                                     originUrl: _this.fileList[index].originUrl,
                                     newUrl: _this.fileList[index].newUrl,
                                     left: _this.fileList[index].left,
-                                    top: _this.fileList[index].top
+                                    top: _this.fileList[index].top,
+                                    width: _this.fileList[index].width,
+                                    height: _this.fileList[index].height,
+                                    scaleY: _this.fileList[index].scaleY,
+                                    scaleX: _this.fileList[index].scaleX,
+                                    showWidth: _this.fileList[index].showWidth,
+                                    showHeight: _this.fileList[index].showHeight
                                 };
                                 _this.isRevise = true;
                                 inputChangeHandler(_this.reviseObj);
@@ -691,7 +736,6 @@ function initEvent(_this) {
     EventUtil.addHandler(_this.cancelBtn, 'click', function () {
         _this.resetState();
     });
-
     EventUtil.addHandler(_this.inputMask, 'click', function () {
         _this.inputFileButton.click();
     });
@@ -726,7 +770,9 @@ function initParams() {
 }
 function initMethods() {
     this.getFiles = function() {
-        return this.fileList;
+        this.fileList.map(function (item) {
+           return {height: item.height, width: item.width, base64: item.newUrl}
+        });
     };
     this.preview = function () {
         this.previewMask.show();
@@ -766,10 +812,14 @@ function Cropper(option) {
         maxFileNumber: option.maxFileNumber || 1,
         imgFileDimension: option.imgFileDimension || 80
     };
-    this.initParams = initParams.call(this);
-    this.createDom = createDom.call(this);
+    this.initParams = initParams;
+    this.createDom = createDom;
     this.initEvents = initEvent;
-    this.initMethods = initMethods.call(this);
+    this.initMethods = initMethods;
+
+    this.initParams();
+    this.createDom();
+    this.initMethods();
     this.initEvents(this);
 
 }

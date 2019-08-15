@@ -8,6 +8,7 @@
 <body>
 <div id="imgFile">
 </div>
+<button id="getfile">get file</button>
 </body>
 <script src="src/cropper.js"></script>
 <script>
@@ -16,6 +17,10 @@
             el: 'imgFile',
             maxFileNumber: 2
         });
+        var getfile = document.getElementById('getfile');
+        getfile.onclick = function () {
+            console.log(cropper.getFiles());
+        }
     }
 </script>
 </html>
