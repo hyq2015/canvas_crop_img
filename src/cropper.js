@@ -288,12 +288,8 @@ function createDom() {
         zoomCircleBottomCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-bc').attr({'data-direction': 'bc'}),
         zoomCircleBottomLeft = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-bl').attr({'data-direction': 'bl'}),
         zoomCircleLeftCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-lc').attr({'data-direction': 'lc'});
-        // zoomLayer = new Dom('div').addClass('xc-layernode xc-circle xc-zm-rc').attr({'data-direction': 'layer-right'}).css({right: '-20px'});
 
-    previewImg.addClass('xc-preview-img').css({
-        height: this.options.cropperWidth + 'px',
-        width: this.options.cropperWidth + 'px'
-    });
+    previewImg.addClass('xc-preview-img');
     previewMask.addClass('xc-preview-mask').appendChild(previewImg).hide();
 
     cutBtn.btn.addClass('xc-cutbtn', 'xc-btn');
@@ -305,8 +301,8 @@ function createDom() {
 
     canvas
         .attr({
-            // width: this.options.cropperWidth,
-            // height: this.options.cropperWidth
+            width: this.options.cropperWidth,
+            height: this.options.cropperWidth
         }).addClass('xc-canvas');
 
     contentBox.css({
@@ -375,8 +371,7 @@ function initEvent(_this) {
 
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
-        if (_this.moveEventType !== 'move' && _this.moveEventType !== 'zoom' &&
-            _this.moveEventType !== 'bg' && _this.moveEventType !== 'layer') {
+        if (_this.moveEventType !== 'move' && _this.moveEventType !== 'zoom') {
             return;
         }
         if (_this.moveEventType === 'move') {
@@ -404,7 +399,7 @@ function initEvent(_this) {
 
             switch(_this.zoomDirection) {
                 case 'rc':
-                    if ((_this.showWidth >= _this.currentCropperWidth + dx + parseInt(getComputedStyle(_this.selectBox, null).left)) &&
+                    if ((_this.naturalImgWidth >= _this.currentCropperWidth + dx + parseInt(getComputedStyle(_this.selectBox, null).left)) &&
                         (_this.minCropperWidth <= _this.currentCropperWidth + dx)
                     ) {
                         _selectBox.style.width = _this.currentCropperWidth + dx + 'px';
@@ -423,14 +418,14 @@ function initEvent(_this) {
                     }
                     break;
                 case 'bc':
-                    if (_this.showHeight >= (_this.currentCropperHeight + heightIncrement + parseInt(getComputedStyle(_this.selectBox, null).top)) &&
+                    if (_this.naturalImgHeight >= (_this.currentCropperHeight + heightIncrement + parseInt(getComputedStyle(_this.selectBox, null).top)) &&
                         (_this.minCropperHeight <= _this.currentCropperHeight + heightIncrement)) {
                         _selectBox.style.height = _this.currentCropperHeight + heightIncrement + 'px';
                     }
                     break;
                 case 'rb':
-                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.showWidth) ||
-                        _this.currentCropperHeight + dy + _this.originTop > _this.showHeight ||
+                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.naturalImgWidth) ||
+                        _this.currentCropperHeight + dy + _this.originTop > _this.naturalImgHeight ||
                         _this.currentCropperWidth + dx < _this.minCropperWidth ||
                         _this.currentCropperHeight + dy < _this.minCropperHeight) {
                         return;
@@ -439,7 +434,7 @@ function initEvent(_this) {
                     _selectBox.style.height = _this.currentCropperHeight + dy + 'px';
                     break;
                 case 'tr':
-                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.showWidth) ||
+                    if ((_this.currentCropperWidth + dx + _this.originLeft > _this.naturalImgWidth) ||
                         _this.originTop - dy < 0 ||
                         _this.currentCropperWidth + dx < _this.minCropperWidth ||
                         _this.currentCropperHeight + dy < _this.minCropperHeight) {
@@ -462,7 +457,7 @@ function initEvent(_this) {
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
                 case 'bl':
-                    if ((_this.currentCropperHeight - dy + _this.originTop > _this.showHeight) ||
+                    if ((_this.currentCropperHeight - dy + _this.originTop > _this.naturalImgHeight) ||
                         (_this.originLeft + dx < 0) ||
                         _this.currentCropperWidth - dx < _this.minCropperWidth ||
                         _this.currentCropperHeight - dy < _this.minCropperHeight) {
@@ -473,24 +468,6 @@ function initEvent(_this) {
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
             }
-        } else if (_this.moveEventType === 'bg') {
-            return;
-            if (_this.originBgTop + e.clientY - _this.originY <= 0) {
-                _this.showImg.style.top = _this.originBgTop + e.clientY - _this.originY + 'px'
-            } else {
-                _this.showImg.style.top = '0';
-            }
-        } else if (_this.moveEventType === 'layer') {
-            return;
-            if (_this.originLayerWidth + e.clientX - _this.originX > _this.naturalImgWidth) {
-                console.log('图片最宽为'+  _this.naturalImgWidth + 'px');
-                return;
-            }
-            _this.layerBox.style.width = _this.originLayerWidth + e.clientX - _this.originX + 'px';
-            _this.showImg.style.width = _this.originLayerWidth + e.clientX - _this.originX + 'px';
-            _this.contentBox.css({
-                width: _this.originLayerWidth + e.clientX - _this.originX + 'px'
-            });
         }
 
     }
@@ -504,7 +481,6 @@ function initEvent(_this) {
             EventUtil.addHandler(reader, 'load', readerHandler);
         } else {
             readerHandler(isRevise);
-            console.log(isRevise);
             _selectBox.style.left = isRevise.left;
             _selectBox.style.top = isRevise.top;
             _selectBox.style.height = isRevise.height + 'px';
@@ -523,27 +499,19 @@ function initEvent(_this) {
         if (!_this.isRevise) {
             _this.originImg.src = src.originUrl || src;
         } else {
-            _this.showWidth = _this.reviseObj.showWidth;
-            _this.showHeight = _this.reviseObj.showHeight;
             _this.canvas.width = _this.reviseObj.width;
             _this.canvas.height = _this.reviseObj.height;
             _this.contentBox.css({
                 width: _this.options.layerWidth + _this.reviseObj.width + 'px'
             });
-            _this.ctx.drawImage(_this.showImg, parseInt(_this.reviseObj.left) * _this.scaleX, parseInt(_this.reviseObj.top) * _this.scaleY, _this.reviseObj.width * _this.scaleX, _this.reviseObj.height * _this.scaleY, 0, 0, _this.reviseObj.width, _this.reviseObj.height);
+            _this.ctx.drawImage(_this.showImg, parseInt(_this.reviseObj.left), parseInt(_this.reviseObj.top), _this.reviseObj.width, _this.reviseObj.height, 0, 0, _this.reviseObj.width, _this.reviseObj.height);
         }
     }
     EventUtil.addHandler(_this.showImg, 'load', function() {
-        console.log("show img load==============");
         if (_this.isRevise) {
             return;
         }
-        _this.showWidth =  _this.showImg.offsetWidth;
-        _this.showHeight =  _this.showImg.offsetHeight;
         EventUtil.addHandler(_this.originImg, 'load', function () {
-            console.log("origin img load==============");
-            _this.scaleY = _this.originImg.naturalHeight / _this.showHeight;
-            _this.scaleX = _this.originImg.naturalWidth / _this.showWidth;
             _this.naturalImgHeight = _this.originImg.naturalHeight;
             _this.naturalImgWidth = _this.originImg.naturalWidth;
             console.log(_this.naturalImgWidth);
@@ -560,7 +528,7 @@ function initEvent(_this) {
             _this.canvas.width = o.cropperWidth;
             _this.canvas.height = o.cropperWidth;
 
-            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, o.cropperWidth * _this.scaleX, o.cropperWidth * _this.scaleY, 0, 0, o.cropperWidth, o.cropperWidth);
+            _this.ctx.drawImage(_this.showImg, newX, newY, o.cropperWidth, o.cropperWidth, 0, 0, o.cropperWidth, o.cropperWidth);
         });
     });
 
@@ -568,10 +536,8 @@ function initEvent(_this) {
     EventUtil.addHandler(window, 'mousedown', function (ev) {
         var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev),
             isZoom = isTarget(target, 'xc-zoomnode'),
-            isBoxMove = isTarget(target, 'xc-sbox'),
-            isBgMove = isTarget(target, 'xc-layermask'),
-            isLayerZoom = isTarget(target, 'xc-layernode');
-        if (!isZoom && !isBoxMove && !isBgMove && !isLayerZoom) {
+            isBoxMove = isTarget(target, 'xc-sbox');
+        if (!isZoom && !isBoxMove) {
             return;
         }
         EventUtil.stopPropagation(ev);
@@ -586,18 +552,11 @@ function initEvent(_this) {
         } else if (isBoxMove) {
             // 裁剪框移动
             _this.moveEventType = 'move';
-        } else if (isBgMove) {
-            console.log('bg==============================');
-            _this.moveEventType = 'bg';
-        } else if (isLayerZoom) {
-            _this.moveEventType = 'layer';
-            _this.originLayerWidth = _this.layerBox.offsetWidth;
         }
         _this.originX = e.clientX;
         _this.originY = e.clientY;
         _this.originLeft = parseInt(getComputedStyle(_selectBox, null).left);
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
-        _this.originBgTop = parseInt(getComputedStyle(_this.showImg, null).top);
         _this.originShowImgWidth = _this.showImg.offsetWidth;
         _this.originShowImgHeight = _this.showImg.offsetHeight;
     });
@@ -616,12 +575,12 @@ function initEvent(_this) {
             _this.canvas.setAttribute('width', canvasWidth.toString());
             _this.canvas.setAttribute('height', canvasHeight.toString());
             _this.ctx.clearRect(0,0, canvasWidth, canvasHeight);
-            _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, selectBoxWidth * _this.scaleX, selectBoxHeight * _this.scaleY, 0, 0, canvasWidth, canvasHeight);
+            _this.ctx.drawImage(_this.showImg, newX, newY, selectBoxWidth, selectBoxHeight, 0, 0, canvasWidth, canvasHeight);
             $('.xc-zoomnode').show();
             _this.moveTarget = null;
-            // _this.contentBox.css({
-            //     width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
-            // })
+            _this.contentBox.css({
+                width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
+            });
         }
     });
     EventUtil.addHandler(fileInput, 'click', function (e) {
@@ -672,10 +631,6 @@ function initEvent(_this) {
                     height: canHeight,
                     naturalImgHeight: _this.naturalImgHeight,
                     naturalImgWidth: _this.naturalImgWidth,
-                    scaleY: _this.scaleY,
-                    scaleX: _this.scaleX,
-                    showWidth: _this.showWidth,
-                    showHeight: _this.showHeight
                 });
             }
 
@@ -689,10 +644,6 @@ function initEvent(_this) {
                 height: canHeight,
                 naturalImgHeight: _this.naturalImgHeight,
                 naturalImgWidth: _this.naturalImgWidth,
-                scaleY: _this.scaleY,
-                scaleX: _this.scaleX,
-                showWidth: _this.showWidth,
-                showHeight: _this.showHeight
             }];
         }
 
@@ -756,10 +707,6 @@ function initEvent(_this) {
                                     top: _this.fileList[index].top,
                                     width: _this.fileList[index].width,
                                     height: _this.fileList[index].height,
-                                    scaleY: _this.fileList[index].scaleY,
-                                    scaleX: _this.fileList[index].scaleX,
-                                    showWidth: _this.fileList[index].showWidth,
-                                    showHeight: _this.fileList[index].showHeight
                                 };
                                 _this.naturalImgHeight = _this.fileList[index].naturalImgHeight;
                                 _this.naturalImgWidth = _this.fileList[index].naturalImgWidth;
@@ -803,10 +750,6 @@ function initParams() {
     this.originY = 0;
     this.originLeft = 0;
     this.originTop = 0;
-    this.showWidth = 0;
-    this.showHeight = 0;
-    this.scaleY = 0;
-    this.scaleY = 0;
     this.fileList = [];
     this.currentImgUrl = '';
     this.isRevise = false;

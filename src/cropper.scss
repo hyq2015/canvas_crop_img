@@ -40,8 +40,7 @@
     text-align: center;
   }
   .xc-canvas{
-    //display: inline-block;
-    display: none;
+    display: inline-block;
     vertical-align: top;
     box-shadow: rgba(0, 0, 0, 0.5) 0 2px 4px;
   }
@@ -191,12 +190,6 @@
   display: none;
 }
 .xc-preview-img{
-  width: 300px;
-  height: 300px;
-  position: absolute;
-  top: 20%;
-  left: 50%;
-  transform: translate(-50%, 0);
 }
 .xc-preview-mask{
   position: fixed;
@@ -206,6 +199,10 @@
   bottom: 0;
   z-index: 1000;
   background-color: rgba(0,0,0,0.5);
+  text-align: center;
+  overflow: scroll;
+  padding-top: 30px;
+  box-sizing: border-box;
 }
 .xc-circle{
   position: absolute;
