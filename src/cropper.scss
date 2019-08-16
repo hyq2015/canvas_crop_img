@@ -2,6 +2,7 @@
   font-family: x-icon-font;
   src: url('./element-icons.535877f.woff')
 }
+
 .r-cropper-mask{
   width: 100%;
   height: 100%;
@@ -11,14 +12,19 @@
   left: 0;
   bottom: 0;
   z-index: 1000;
-  overflow: hidden;
   display: none;
   .xc-layer{
     position: relative;
     box-shadow: 0 2px 4px rgba(0,0,0,.5);
-    background-color: #fff;
     display: inline-block;
     border-radius: 6px;
+    background-color: transparent;
+  }
+  .xc-layer-inner{
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: scroll;
   }
 
   .xc-sbox{
@@ -34,7 +40,8 @@
     text-align: center;
   }
   .xc-canvas{
-    display: inline-block;
+    //display: inline-block;
+    display: none;
     vertical-align: top;
     box-shadow: rgba(0, 0, 0, 0.5) 0 2px 4px;
   }
@@ -47,7 +54,7 @@
   .xc-btn{
     user-select:none;
     position: absolute;
-    bottom: 0;
+    bottom: -36px;
     height: 36px;
     width: 80px;
     text-align: center;
@@ -86,6 +93,9 @@
   }
   .xc-showimg{
     user-select: none;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
   .xc-layermask{
     position: absolute;
@@ -197,7 +207,7 @@
   z-index: 1000;
   background-color: rgba(0,0,0,0.5);
 }
-.xc-zoomnode{
+.xc-circle{
   position: absolute;
   width: 12px;
   height: 12px;

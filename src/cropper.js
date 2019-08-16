@@ -269,6 +269,7 @@ function createDom() {
     var mask = $('div'),
         contentBox = $('div'),
         layerBox = $('div'),
+        layerBoxInner = $('div'),
         selectBox = $('div'),
         showImg = $('img'),
         canvas = $('canvas'),
@@ -278,14 +279,16 @@ function createDom() {
         previewMask = new Dom('div'),
         previewImg = new Dom('img'),
         layerMask = new Dom('div'),
-        zoomCircleTopLeft = new Dom('div').addClass('xc-zoomnode xc-zm-tl').attr({'data-direction': 'tl'}),
-        zoomCircleTopCenter = new Dom('div').addClass('xc-zoomnode xc-zm-tc').attr({'data-direction': 'tc'}),
-        zoomCircleTopRight = new Dom('div').addClass('xc-zoomnode xc-zm-tr').attr({'data-direction': 'tr'}),
-        zoomCircleRightCenter = new Dom('div').addClass('xc-zoomnode xc-zm-rc').attr({'data-direction': 'rc'}),
-        zoomCircleRightBottom = new Dom('div').addClass('xc-zoomnode xc-zm-rb').attr({'data-direction': 'rb'}),
-        zoomCircleBottomCenter = new Dom('div').addClass('xc-zoomnode xc-zm-bc').attr({'data-direction': 'bc'}),
-        zoomCircleBottomLeft = new Dom('div').addClass('xc-zoomnode xc-zm-bl').attr({'data-direction': 'bl'}),
-        zoomCircleLeftCenter = new Dom('div').addClass('xc-zoomnode xc-zm-lc').attr({'data-direction': 'lc'});
+        duplicateImg = new Dom('img'),
+        zoomCircleTopLeft = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-tl').attr({'data-direction': 'tl'}),
+        zoomCircleTopCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-tc').attr({'data-direction': 'tc'}),
+        zoomCircleTopRight = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-tr').attr({'data-direction': 'tr'}),
+        zoomCircleRightCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-rc').attr({'data-direction': 'rc'}),
+        zoomCircleRightBottom = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-rb').attr({'data-direction': 'rb'}),
+        zoomCircleBottomCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-bc').attr({'data-direction': 'bc'}),
+        zoomCircleBottomLeft = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-bl').attr({'data-direction': 'bl'}),
+        zoomCircleLeftCenter = new Dom('div').addClass('xc-zoomnode xc-circle xc-zm-lc').attr({'data-direction': 'lc'});
+        // zoomLayer = new Dom('div').addClass('xc-layernode xc-circle xc-zm-rc').attr({'data-direction': 'layer-right'}).css({right: '-20px'});
 
     previewImg.addClass('xc-preview-img').css({
         height: this.options.cropperWidth + 'px',
@@ -297,14 +300,13 @@ function createDom() {
     cancelBtn.btn.addClass('xc-cbtn', 'xc-btn');
 
     showImg.css({
-        minWidth: this.options.layerWidth + 'px',
-        maxWidth: this.options.layerWidth + 'px'
+        Width: this.options.layerWidth + 'px'
     }).addClass('xc-showimg');
 
     canvas
         .attr({
-            width: this.options.cropperWidth,
-            height: this.options.cropperWidth,
+            // width: this.options.cropperWidth,
+            // height: this.options.cropperWidth
         }).addClass('xc-canvas');
 
     contentBox.css({
@@ -316,14 +318,15 @@ function createDom() {
         width: this.options.cropperWidth + 'px',
         height: this.options.cropperWidth + 'px',
     }).addClass('xc-sbox').appendChild(zoomCircleTopLeft, zoomCircleTopCenter, zoomCircleTopRight, zoomCircleRightCenter,
-        zoomCircleRightBottom, zoomCircleBottomCenter, zoomCircleBottomLeft, zoomCircleLeftCenter);
-    layerBox.css({
+        zoomCircleRightBottom, zoomCircleBottomCenter, zoomCircleBottomLeft, zoomCircleLeftCenter,
+        duplicateImg);
+    layerBox.appendChild(layerBoxInner, cutBtn, cancelBtn).addClass('xc-layer').css({
         width: this.options.layerWidth + 'px',
         height: this.options.layerHeight + 'px',
-    }).addClass('xc-layer');
+    });
+    layerBoxInner.addClass('xc-layer-inner').appendChild(selectBox, showImg, layerMask);
     layerMask.addClass('xc-layermask');
 
-    layerBox.appendChild(selectBox, cutBtn, cancelBtn, showImg, layerMask);
     contentBox.appendChild(layerBox, canvas);
     mask.addClass('r-cropper-mask').appendChild(contentBox);
     document.body.appendChild(mask.getElement());
@@ -345,6 +348,7 @@ function createDom() {
 
     this.mask = mask;
     this.layerBox = layerBox.getElement();
+    this.layerBoxInner = layerBoxInner.getElement();
     this.contentBox = contentBox;
     this.selectBox = selectBox.getElement();
     this.showImg = showImg.getElement();
@@ -358,33 +362,41 @@ function createDom() {
     this.previewImg = previewImg;
     this.originImg = new Image();
 }
+function isTarget(target, className) {
+    return target.className.indexOf(className) > -1;
+}
+
 function initEvent(_this) {
     var _selectBox = _this.selectBox, fileInput = _this.inputFileButton;
 
     function handler(event) {
         var cropperWidth = _selectBox.offsetWidth, cropperHeight = _selectBox.offsetHeight;
-        var e = EventUtil.getEvent(event);
+        var e = EventUtil.getEvent(event), target = EventUtil.getTarget(event);
+
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
+        if (_this.moveEventType !== 'move' && _this.moveEventType !== 'zoom' &&
+            _this.moveEventType !== 'bg' && _this.moveEventType !== 'layer') {
+            return;
+        }
         if (_this.moveEventType === 'move') {
             var left = _this.originLeft + e.clientX-_this.originX, top = _this.originTop + e.clientY-_this.originY;
             if(left <= 0) {
                 left = 0;
             }
-            if(left >= _this.options.layerWidth - cropperWidth) {
-                left = _this.options.layerWidth - cropperWidth;
+            if(left >= _this.originShowImgWidth - cropperWidth) {
+                left = _this.originShowImgWidth - cropperWidth;
             }
             if(top <= 0) {
                 top = 0;
             }
-            if (top >= _this.showHeight - cropperHeight) {
-                top = _this.showHeight - cropperHeight;
+            if (top >= _this.originShowImgHeight - cropperHeight) {
+                top = _this.originShowImgHeight - cropperHeight;
             }
             _this.selectBox.style.left = left +'px';
             _this.selectBox.style.top = top +'px';
 
         } else if (_this.moveEventType === 'zoom') {
-            console.log("zoom===========");
             $('.xc-zoomnode').hide();
             var heightIncrement = e.clientY - _this.originY,
             dx = e.clientX - _this.originX, dy = dx * _this.currentCropperHeight / _this.currentCropperWidth;
@@ -461,6 +473,24 @@ function initEvent(_this) {
                     _selectBox.style.left = _this.originLeft + dx + 'px';
                     break;
             }
+        } else if (_this.moveEventType === 'bg') {
+            return;
+            if (_this.originBgTop + e.clientY - _this.originY <= 0) {
+                _this.showImg.style.top = _this.originBgTop + e.clientY - _this.originY + 'px'
+            } else {
+                _this.showImg.style.top = '0';
+            }
+        } else if (_this.moveEventType === 'layer') {
+            return;
+            if (_this.originLayerWidth + e.clientX - _this.originX > _this.naturalImgWidth) {
+                console.log('图片最宽为'+  _this.naturalImgWidth + 'px');
+                return;
+            }
+            _this.layerBox.style.width = _this.originLayerWidth + e.clientX - _this.originX + 'px';
+            _this.showImg.style.width = _this.originLayerWidth + e.clientX - _this.originX + 'px';
+            _this.contentBox.css({
+                width: _this.originLayerWidth + e.clientX - _this.originX + 'px'
+            });
         }
 
     }
@@ -516,7 +546,13 @@ function initEvent(_this) {
             _this.scaleX = _this.originImg.naturalWidth / _this.showWidth;
             _this.naturalImgHeight = _this.originImg.naturalHeight;
             _this.naturalImgWidth = _this.originImg.naturalWidth;
-
+            console.log(_this.naturalImgWidth);
+            if (_this.options.layerWidth > _this.naturalImgWidth) {
+                _this.showImg.style.width = _this.naturalImgWidth + 'px';
+            } else {
+                _this.layerBox.style.width = _this.options.layerWidth + 'px';
+                _this.showImg.style.width = _this.naturalImgWidth + 'px';
+            }
             var o = _this.options, newX = parseInt(getComputedStyle(_this.selectBox, null).left),
                 newY = parseInt(getComputedStyle(_this.selectBox, null).top);
 
@@ -528,35 +564,48 @@ function initEvent(_this) {
         });
     });
 
-    EventUtil.addHandler(_selectBox, 'mousedown', function (ev) {
-        var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev);
-
+    EventUtil.addHandler(window, 'mousemove', handler);
+    EventUtil.addHandler(window, 'mousedown', function (ev) {
+        var e = EventUtil.getEvent(ev), target = EventUtil.getTarget(ev),
+            isZoom = isTarget(target, 'xc-zoomnode'),
+            isBoxMove = isTarget(target, 'xc-sbox'),
+            isBgMove = isTarget(target, 'xc-layermask'),
+            isLayerZoom = isTarget(target, 'xc-layernode');
+        if (!isZoom && !isBoxMove && !isBgMove && !isLayerZoom) {
+            return;
+        }
         EventUtil.stopPropagation(ev);
         EventUtil.preventDefault(ev);
-        EventUtil.addHandler(window, 'mousemove', handler);
-
-        if (target.className.indexOf('xc-zoomnode') > -1) {
+        if (isZoom) {
             // 裁剪框缩放
             _this.moveEventType = 'zoom';
             _this.moveTarget = EventUtil.getTarget(ev);
             _this.currentCropperWidth = _this.selectBox.offsetWidth;
             _this.currentCropperHeight = _this.selectBox.offsetHeight;
             _this.zoomDirection = target.getAttribute('data-direction')
-        } else {
+        } else if (isBoxMove) {
             // 裁剪框移动
-
             _this.moveEventType = 'move';
+        } else if (isBgMove) {
+            console.log('bg==============================');
+            _this.moveEventType = 'bg';
+        } else if (isLayerZoom) {
+            _this.moveEventType = 'layer';
+            _this.originLayerWidth = _this.layerBox.offsetWidth;
         }
         _this.originX = e.clientX;
         _this.originY = e.clientY;
         _this.originLeft = parseInt(getComputedStyle(_selectBox, null).left);
         _this.originTop = parseInt(getComputedStyle(_selectBox, null).top);
+        _this.originBgTop = parseInt(getComputedStyle(_this.showImg, null).top);
+        _this.originShowImgWidth = _this.showImg.offsetWidth;
+        _this.originShowImgHeight = _this.showImg.offsetHeight;
     });
     EventUtil.addHandler(window, 'mouseup', function (e) {
         EventUtil.stopPropagation(e);
         EventUtil.preventDefault(e);
         // 有可能鼠标会移动到裁剪框外面，需要处理exception
-        EventUtil.removeHandler(window, 'mousemove', handler);
+        _this.moveEventType = '';
         if (_this.isCropping) {
             var newX = parseInt(getComputedStyle(_selectBox, null).left),
                 newY = parseInt(getComputedStyle(_selectBox, null).top),
@@ -570,9 +619,9 @@ function initEvent(_this) {
             _this.ctx.drawImage(_this.showImg, newX * _this.scaleX, newY * _this.scaleY, selectBoxWidth * _this.scaleX, selectBoxHeight * _this.scaleY, 0, 0, canvasWidth, canvasHeight);
             $('.xc-zoomnode').show();
             _this.moveTarget = null;
-            _this.contentBox.css({
-                width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
-            })
+            // _this.contentBox.css({
+            //     width: _this.options.layerWidth + _selectBox.offsetWidth + 'px'
+            // })
         }
     });
     EventUtil.addHandler(fileInput, 'click', function (e) {
@@ -712,6 +761,8 @@ function initEvent(_this) {
                                     showWidth: _this.fileList[index].showWidth,
                                     showHeight: _this.fileList[index].showHeight
                                 };
+                                _this.naturalImgHeight = _this.fileList[index].naturalImgHeight;
+                                _this.naturalImgWidth = _this.fileList[index].naturalImgWidth;
                                 _this.isRevise = true;
                                 inputChangeHandler(_this.reviseObj);
                                 break;
@@ -761,7 +812,7 @@ function initParams() {
     this.isRevise = false;
     this.reviseObj = null;
     this.previewIndex = 0;
-    this.moveEventType = 'move';
+    this.moveEventType = '';
     this.zoomDirection = '';
     this.isCropping = false;
     this.moveTarget = null;
@@ -770,7 +821,7 @@ function initParams() {
 }
 function initMethods() {
     this.getFiles = function() {
-        this.fileList.map(function (item) {
+        return this.fileList.map(function (item) {
            return {height: item.height, width: item.width, base64: item.newUrl}
         });
     };
@@ -786,6 +837,7 @@ function initMethods() {
     this.resetState = function () {
         this.isRevise = false;
         this.reviseObj = null;
+        this.moveEventType = '';
         this.selectBox.style.left = '0';
         this.selectBox.style.top = '0';
         this.selectBox.style.width = this.options.cropperWidth + 'px';
@@ -803,9 +855,9 @@ function initMethods() {
 function Cropper(option) {
     this.options = {
         cropperWidth: option.cropperWidth || 150, 
-        layerWidth: option.layerWidth || 400,
-        layerHeight: 600,
-        btnWidth: option.btnWidth || 200,
+        layerWidth: option.layerWidth || 750,
+        layerHeight: 800,
+        btnWidth: option.layerWidth / 2 || 375,
         el: option.el || 'crop-file-select',
         okText: option.okText || '确定',
         cancelText: option.cancelText || '取消',
