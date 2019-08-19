@@ -8,19 +8,28 @@
 <body>
 <div id="imgFile">
 </div>
-<button id="getfile">get file</button>
 </body>
+<script src="src/EventUtil.js"></script>
+<script src="src/Dom.js"></script>
 <script src="src/cropper.js"></script>
 <script>
     window.onload=function () {
         var cropper = new Cropper({
+            okText: 'confirm',
+            cancelText: 'cancel',
             el: 'imgFile',
-            maxFileNumber: 2
+            layerWidth: 1950,
+            layerHeight: 1000,
+            maxFileNumber: 1,
+            cropperWidth: 150,
+            cropperHeight: 150,
+            imgFileDimension: 80
         });
-        var getfile = document.getElementById('getfile');
-        getfile.onclick = function () {
+        var btn = new ButtonDom('div', 'Get Files');
+        btn.btnMask.getElement().onclick = function() {
             console.log(cropper.getFiles());
-        }
+        };
+        document.body.appendChild(btn.ele)
     }
 </script>
 </html>

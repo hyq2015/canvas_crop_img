@@ -18,7 +18,12 @@
     box-shadow: 0 2px 4px rgba(0,0,0,.5);
     display: inline-block;
     border-radius: 6px;
-    background-color: transparent;
+    background-color: rgba(255, 255, 255, 0);
+    background-image: linear-gradient(to top right,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc),linear-gradient(to top right,#ccc 25%,transparent 0,transparent 75%,#ccc 0,#ccc);
+    background-size: 16px 16px;
+    background-position: 0 0,8px 8px;
+    background-repeat: repeat;
+    //overflow: scroll;
   }
   .xc-layer-inner{
     width: 100%;
@@ -36,7 +41,7 @@
     z-index: 1001;
   }
   .xc-cbox{
-    margin: 20px auto 0;
+    margin: 10px auto 0;
     text-align: center;
   }
   .xc-canvas{
@@ -44,34 +49,41 @@
     vertical-align: top;
     box-shadow: rgba(0, 0, 0, 0.5) 0 2px 4px;
   }
-  .xc-cbtn{
-    left: 0;
-    background-color: #fff;
-    color: rgba(0,0,0,.87);
-    border-bottom-left-radius: 4px;
-  }
-  .xc-btn{
-    user-select:none;
+  .xc-showimg{
+    user-select: none;
     position: absolute;
-    bottom: -36px;
-    height: 36px;
-    width: 80px;
-    text-align: center;
-    line-height: 36px;
-    cursor: pointer;
-    box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
-    overflow: hidden;
+    top: 0;
+    left: 0;
   }
-  .xc-cutbtn{
-    right: 0;
-    background-color: #3f51b5;
-    color: #fff;
-    border-bottom-right-radius: 4px;
-
+  .xc-layermask{
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 900;
   }
+}
+.outer-dom{
+  position: relative;
+  margin-bottom: 40px;
+}
+.xc-base-btn{
+  position: relative;
+  user-select:none;
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+  background-color: #3f51b5;
+  color: #fff;
+  display: inline-block;
+  padding: 8px 20px;
+  box-sizing: border-box;
+  font-size: 16px;
+  border-radius: 2px;
   .x-btn-mask{
     opacity: 1;
-    //transition: opacity 280ms cubic-bezier(.4, 0, .2, 1);
     background-color: transparent;
     position: absolute;
     top: 0;
@@ -90,24 +102,32 @@
     border-radius: 100%;
     opacity: 0;
   }
-  .xc-showimg{
-    user-select: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  .xc-layermask{
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 36px;
-    width: 100%;
-    z-index: 900;
-  }
 }
+.xc-btn{
+  padding: 0;
+  position: absolute;
+  line-height: 36px;
+  height: 36px;
+  bottom: -36px;
+  width: 50%;
+}
+.xc-cbtn{
+  left: 0;
+  background-color: #fff;
+  color: rgba(0,0,0,.87);
+  border-bottom-left-radius: 4px;
+}
+.xc-cutbtn{
+  right: 0;
+  background-color: #3f51b5;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
 .r-c-imgs{
   position: relative;
   display: inline-block;
+
 }
 .xc-delteicon,.xc-reviseicon,.xc-zoomicon{
   font-family: x-icon-font;
@@ -185,6 +205,8 @@
 .xc-error{
   position: absolute;
   bottom: -20px;
+  color: #f00;
+  font-size: 14px;
 }
 .xc-input{
   display: none;
