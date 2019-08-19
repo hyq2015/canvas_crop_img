@@ -283,8 +283,8 @@ function naturalImgLoadHandler() {
     xOverflow = this.naturalImgWidth > this.maxLayerWidth;
     yOverflow = this.naturalImgHeight > this.maxLayerHeight;
     this._layerBox.css({
-        width: (xOverflow ? this.maxLayerWidth : this.naturalImgWidth) + (xOverflow || yOverflow ?  this.scrollBarDimension : 0) + 'px',
-        height: (yOverflow ? this.maxLayerHeight : this.naturalImgHeight) + (xOverflow || yOverflow ?  this.scrollBarDimension : 0) + 'px',
+        width: (xOverflow ? this.maxLayerWidth : (this.naturalImgWidth < this.minLayerWidth ? this.minLayerWidth : this.naturalImgWidth)) + (yOverflow ? this.scrollBarDimension : 0) + 'px',
+        height: (yOverflow ? this.maxLayerHeight : (this.naturalImgHeight < this.minLayerHeight ? this.minLayerHeight : this.naturalImgHeight)) + (xOverflow ? this.scrollBarDimension : 0) + 'px',
     });
     this._layerBoxInner.css({
         overflow: (xOverflow ? 'scroll' : 'hidden') + ' ' + (yOverflow ? 'scroll' : 'hidden')
@@ -574,6 +574,8 @@ function initParams() {
     this.minCropperHeight = 10;
     this.maxLayerWidth = window.innerWidth - 80;
     this.maxLayerHeight = window.innerHeight - 80;
+    this.minLayerWidth = 300;
+    this.minLayerHeight = 300;
     this.scrollBarDimension = getScrollWidth();
 }
 
