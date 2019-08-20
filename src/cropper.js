@@ -14,8 +14,8 @@ function createDom() {
         selectBox = $('div'),
         showImg = $('img'),
         canvas = $('canvas'),
-        cutBtn = new ButtonDom('div', this.options.okText),
-        cancelBtn = new ButtonDom('div', this.options.cancelText),
+        cutBtn = new ButtonDom({tagName: 'div', text: this.options.okText}),
+        cancelBtn = new ButtonDom({tagName: 'div', text: this.options.cancelText}),
         originInputBtn = document.getElementById(this.options.el),
         previewMask = new Dom('div'),
         previewImg = new Dom('img'),
@@ -52,10 +52,6 @@ function createDom() {
             height: this.options.cropperHeight
         }).addClass('xc-canvas');
 
-    contentBox.css({
-        width: this.options.layerWidth + this.options.cropperWidth + 'px',
-    }).addClass('xc-cbox');
-
     // 需要给裁剪框添加缩放的节点
     selectBox.css({
         width: this.options.cropperWidth + 'px',
@@ -66,12 +62,10 @@ function createDom() {
     layerBox.appendChild(layerBoxInner, cutBtn, cancelBtn).addClass('xc-layer');
     layerBoxInner.addClass('xc-layer-inner').appendChild(selectBox, showImg, layerMask);
     layerMask.addClass('xc-layermask');
-
-    contentBox.appendChild(layerBox, canvas);
+    contentBox.addClass('xc-cbox').appendChild(layerBox, canvas);
     mask.addClass('r-cropper-mask').appendChild(contentBox);
     document.body.appendChild(mask.getElement());
     document.body.appendChild(previewMask.getElement());
-
 
     inputMask.appendChild(inputImg, inputFile);
     imgsOuterDom.appendChild(inputMask);
@@ -124,9 +118,8 @@ function readerHandler(e) {
     } else {
         this.canvas.width = this.reviseObj.width;
         this.canvas.height = this.reviseObj.height;
-        this.contentBox.css({
-            width: this.options.layerWidth + this.reviseObj.width + 'px'
-        });
+        this.layerBox.style.width = this.reviseObj.actualLayerWidth + 'px';
+        this.layerBox.style.height = this.reviseObj.actualLayerHeight + 'px';
         this.ctx.drawImage(this.showImg, parseInt(this.reviseObj.left), parseInt(this.reviseObj.top), this.reviseObj.width, this.reviseObj.height, 0, 0, this.reviseObj.width, this.reviseObj.height);
     }
 }
@@ -272,7 +265,7 @@ function mousemoveHandler(event) {
 function naturalImgLoadHandler() {
     var o = this.options, newX = parseInt(getComputedStyle(this.selectBox, null).left),
         newY = parseInt(getComputedStyle(this.selectBox, null).top),
-        xOverflow, yOverflow;
+        xOverflow, yOverflow, actualLayerWidth, actualLayerHeight;
 
     this.naturalImgHeight = this.originImg.naturalHeight;
     this.naturalImgWidth = this.originImg.naturalWidth;
@@ -282,10 +275,22 @@ function naturalImgLoadHandler() {
 
     xOverflow = this.naturalImgWidth > this.maxLayerWidth;
     yOverflow = this.naturalImgHeight > this.maxLayerHeight;
+    if (!yOverflow && this.naturalImgHeight < this.options.cropperHeight) {
+        this.selectBox.style.height = this.naturalImgHeight + 'px';
+        this.canvas.height = this.naturalImgHeight;
+    }
+    if (!xOverflow && this.naturalImgWidth < this.options.cropperWidth) {
+        this.selectBox.style.width = this.naturalImgWidth + 'px';
+        this.canvas.width = this.naturalImgWidth;
+    }
+    actualLayerWidth = (xOverflow ? this.maxLayerWidth : (this.naturalImgWidth < this.minLayerWidth ? this.minLayerWidth : this.naturalImgWidth)) + (yOverflow ? this.scrollBarDimension : 0);
+    actualLayerHeight = (yOverflow ? this.maxLayerHeight : (this.naturalImgHeight < this.minLayerHeight ? this.minLayerHeight : this.naturalImgHeight)) + (xOverflow ? this.scrollBarDimension : 0);
     this._layerBox.css({
-        width: (xOverflow ? this.maxLayerWidth : (this.naturalImgWidth < this.minLayerWidth ? this.minLayerWidth : this.naturalImgWidth)) + (yOverflow ? this.scrollBarDimension : 0) + 'px',
-        height: (yOverflow ? this.maxLayerHeight : (this.naturalImgHeight < this.minLayerHeight ? this.minLayerHeight : this.naturalImgHeight)) + (xOverflow ? this.scrollBarDimension : 0) + 'px',
+        width: actualLayerWidth + 'px',
+        height: actualLayerHeight + 'px',
     });
+    this.actualLayerWidth = actualLayerWidth;
+    this.actualLayerHeight = actualLayerHeight;
     this._layerBoxInner.css({
         overflow: (xOverflow ? 'scroll' : 'hidden') + ' ' + (yOverflow ? 'scroll' : 'hidden')
     });
@@ -342,6 +347,8 @@ function imgReviseHandler(e) {
                     top: this.fileList[index].top,
                     width: this.fileList[index].width,
                     height: this.fileList[index].height,
+                    actualLayerWidth: this.fileList[index].actualLayerWidth,
+                    actualLayerHeight: this.fileList[index].actualLayerHeight
                 };
                 this.naturalImgHeight = this.fileList[index].naturalImgHeight;
                 this.naturalImgWidth = this.fileList[index].naturalImgWidth;
@@ -350,6 +357,9 @@ function imgReviseHandler(e) {
                 break;
             case 'DELETE':
                 this.fileList.splice(index, 1);
+                if (this.errorReminder) {
+                    this.errorReminder.hide();
+                }
                 document.getElementById('r-c-imglist').removeChild(document.getElementsByClassName('xc-simg')[index]);
                 break;
             case 'PREVIEW':
@@ -388,6 +398,8 @@ function okBtnHandler() {
                 height: canHeight,
                 naturalImgHeight: this.naturalImgHeight,
                 naturalImgWidth: this.naturalImgWidth,
+                actualLayerWidth: this.actualLayerWidth,
+                actualLayerHeight: this.actualLayerHeight
             });
         }
 
@@ -401,6 +413,8 @@ function okBtnHandler() {
             height: canHeight,
             naturalImgHeight: this.naturalImgHeight,
             naturalImgWidth: this.naturalImgWidth,
+            actualLayerWidth: this.actualLayerWidth,
+            actualLayerHeight: this.actualLayerHeight
         }];
     }
     if (this.fileList.length > 0) {
@@ -475,9 +489,6 @@ function mouseupHandler(e) {
         this.ctx.drawImage(this.showImg, newX, newY, selectBoxWidth, selectBoxHeight, 0, 0, canvasWidth, canvasHeight);
         $('.xc-zoomnode').show();
         this.moveTarget = null;
-        this.contentBox.css({
-            width: this.options.layerWidth + this.selectBox.offsetWidth + 'px'
-        });
     }
 }
 
@@ -496,6 +507,7 @@ function fileuploadClickHandler(e) {
                 })
                 .addClass('xc-error')
                 .text(this.options.fileNumberExceed);
+            this.errorReminder = errorRemind;
             this.imgsOuterDom.appendChild(errorRemind);
         }
         EventUtil.preventDefault(e);
@@ -559,24 +571,26 @@ function getScrollWidth() {
 function initParams() {
     this.originX = 0;
     this.originY = 0;
-    this.originLeft = 0;
-    this.originTop = 0;
     this.fileList = [];
-    this.currentImgUrl = '';
+    this.originTop = 0;
+    this.originLeft = 0;
     this.isRevise = false;
     this.reviseObj = null;
     this.previewIndex = 0;
+    this.moveTarget = null;
+    this.currentImgUrl = '';
     this.moveEventType = '';
     this.zoomDirection = '';
     this.isCropping = false;
-    this.moveTarget = null;
-    this.minCropperWidth = 10;
-    this.minCropperHeight = 10;
-    this.maxLayerWidth = window.innerWidth - 80;
-    this.maxLayerHeight = window.innerHeight - 80;
     this.minLayerWidth = 300;
     this.minLayerHeight = 300;
+    this.minCropperWidth = 10;
+    this.actualLayerWidth = 0;
+    this.minCropperHeight = 10;
+    this.actualLayerHeight = 0;
     this.scrollBarDimension = getScrollWidth();
+    this.maxLayerWidth = window.innerWidth - 80;
+    this.maxLayerHeight = window.innerHeight - 80;
 }
 
 /**
@@ -657,8 +671,6 @@ function Cropper(option) {
         okText: option.okText || '确定',
         cancelText: option.cancelText || '取消',
         el: option.el,
-        layerWidth: option.layerWidth || 750,
-        layerHeight: option.layerHeight || 800,
         maxFileNumber: option.maxFileNumber || 1,
         cropperWidth: option.cropperWidth || 150,
         cropperHeight: option.cropperHeight || 150,

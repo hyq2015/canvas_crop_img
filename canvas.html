@@ -18,17 +18,18 @@
             okText: 'confirm',
             cancelText: 'cancel',
             el: 'imgFile',
-            layerWidth: 1950,
-            layerHeight: 1000,
-            maxFileNumber: 1,
+            maxFileNumber: 2,
             cropperWidth: 150,
             cropperHeight: 150,
             imgFileDimension: 80
         });
-        var btn = new ButtonDom('div', 'Get Files');
-        btn.btnMask.getElement().onclick = function() {
-            console.log(cropper.getFiles());
-        };
+        var btn = new ButtonDom({
+            tagName: 'div',
+            text: 'Get Files',
+            onclick: function() {
+                console.log(cropper.getFiles());
+            }
+        });
         document.body.appendChild(btn.ele)
     }
 </script>

@@ -289,6 +289,9 @@ function createButtonDom(tagName, text, width) {
  */
 function initButtonEvents() {
     EventUtil.addHandler(this.btnMask.getElement(), 'click', rippleHandler.bind(this));
+    if (this.options.onclick) {
+        EventUtil.addHandler(this.btnMask.getElement(), 'click', this.options.onclick.bind(this));
+    }
 }
 
 /**
@@ -298,10 +301,10 @@ function initButtonEvents() {
  * @param {Number?} width
  * @constructor
  */
-function ButtonDom(tagName, text, width) {
+function ButtonDom(options) {
     this.createButtonDom = createButtonDom;
     this.initEvents = initButtonEvents;
-
-    this.createButtonDom(tagName, text, width);
+    this.options = options;
+    this.createButtonDom(options.tagName, options.text, options.width);
     this.initEvents();
 }
