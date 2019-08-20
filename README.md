@@ -4,6 +4,10 @@
 <script src="path/to/cropper.min.js"></script>
 
 ```
++ import css to your html file
+```aidl
+<link rel="stylesheet" href="path/to/cropper.min.css">
+```
 
 + initialize
 
