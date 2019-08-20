@@ -7,8 +7,6 @@ var cropper = new Cropper({
     okText: 'confirm', // ok text
     cancelText: 'cancel', // cancel text
     el: 'imgFile', // the parent element id of cropper
-    layerWidth: 750, // popup layer width
-    layerHeight: 800, // popup layer height
     maxFileNumber: 1, // max number of file
     cropperWidth: 150, // initial cropper width
     cropperHeight: 150, // initial cropper height

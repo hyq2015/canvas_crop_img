@@ -8,6 +8,7 @@ var del =require('del');
 var postcss =require('gulp-postcss');
 var autoprefixer =require('autoprefixer');
 var gulpCopy =require('gulp-copy');
+var gulpConcat =require('gulp-concat');
 sass.compiler = require('node-sass');
 
 function styles() {
@@ -21,8 +22,13 @@ function styles() {
         .pipe(gulp.dest('./dist/css'))
 }
 function scripts() {
-    return gulp.src('./src/**/*.js')
-        .pipe(uglify())
+    return gulp.src(['./src/EventUtil.js', './src/Dom.js', './src/cropper.js'])
+        .pipe(gulpConcat('cropper.min.js'))
+        .pipe(uglify({
+            compress: {
+                drop_console: true
+            }
+        }))
         .pipe(gulp.dest('./dist/js'))
 }
 
