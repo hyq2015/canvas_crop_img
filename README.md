@@ -1,4 +1,9 @@
 ### js canvas crop img
++ import cropper.min.js to your html file
+```aidl
+<script src="path/to/cropper.min.js"></script>
+
+```
 
 + initialize
 
